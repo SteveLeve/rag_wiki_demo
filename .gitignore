@@ -129,6 +129,7 @@ dmypy.json
 # Project-specific
 *.pkl
 *.pickle
+*.json
 data/
 downloads/
 cache/

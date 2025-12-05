@@ -89,8 +89,9 @@ This project serves as a learning platform and proof-of-concept for:
    jupyter notebook wikipedia-rag-tutorial.ipynb
    ```
 
-2. Configure your dataset size in the Configuration cell:
+2. Configure your storage backend in the Configuration cell:
    ```python
+   STORAGE_BACKEND = 'memory'  # or 'json' or 'postgresql'
    TARGET_SIZE_MB = 10  # Start with 10MB for quick testing
    ```
 
@@ -98,6 +99,34 @@ This project serves as a learning platform and proof-of-concept for:
    - Download and process Wikipedia articles
    - Build the vector database
    - Test with sample queries
+
+### Using PostgreSQL for Persistent Embeddings (Optional)
+
+To avoid regenerating embeddings (which takes 50+ minutes), use PostgreSQL + pgvector:
+
+1. Start PostgreSQL with Docker:
+   ```bash
+   docker run -d --name pgvector-rag \
+     -e POSTGRES_PASSWORD=postgres \
+     -e POSTGRES_DB=rag_db \
+     -p 5432:5432 \
+     -v pgvector_data:/var/lib/postgresql/data \
+     pgvector/pgvector:pg16
+   ```
+
+2. Install the PostgreSQL adapter:
+   ```bash
+   pip install psycopg2-binary
+   ```
+
+3. Change configuration in the notebook:
+   ```python
+   STORAGE_BACKEND = 'postgresql'
+   ```
+
+4. Create analysis notebooks that load stored embeddings without regeneration
+
+For detailed setup, see **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)**
 
 ## 📊 Dataset Specifications
 
@@ -289,6 +318,33 @@ Example models to try:
 | **Scaling Cost**      | Pay-as-you-go          | Pay-as-you-go            |
 | **SQL Support**       | Full PostgreSQL        | SQLite subset            |
 | **Best For**          | Complex queries, ACID  | Global distribution      |
+
+## 📓 Analysis & Experimentation Notebooks
+
+Once you have embeddings stored in PostgreSQL, you can create separate analysis notebooks to:
+
+- **Compare Embedding Models**: Generate embeddings with different models, store them separately, compare retrieval quality
+- **Evaluate Retrieval Performance**: Test different queries to identify what works well
+- **Statistical Analysis**: Analyze embedding properties and distributions
+- **Debug Retrieval Issues**: Identify queries that return poor results
+- **Benchmark Improvements**: Test changes to chunking, embeddings, or ranking strategies
+
+See **embedding-analysis-template.ipynb** for examples and code snippets.
+
+### Benefits of Separate Analysis Notebooks
+
+- **Performance**: Don't regenerate embeddings for each experiment (saves 50+ minutes per run)
+- **Organization**: Keep experiment code separate from the core tutorial
+- **Reproducibility**: Compare results across multiple model configurations
+- **Scalability**: Easily add new experiments without modifying the main notebook
+
+Example experiments:
+```
+embedding-analysis-template.ipynb          # Template & examples
+experiment-bge-vs-minilm.ipynb            # Compare embedding models
+experiment-chunk-size-impact.ipynb        # Test different chunk sizes
+experiment-top-n-threshold.ipynb          # Find optimal retrieval count
+```
 
 ## 📈 Performance Optimization
 

@@ -68,11 +68,13 @@ Initial infrastructure phase **COMPLETE**. All foundational notebooks, documenta
 
 ### Pending Tasks
 
-#### 1. Move/Reorganize Existing Notebooks
-- [ ] Move `wikipedia-rag-tutorial-simple.ipynb` → `foundation/01-basic-rag-in-memory.ipynb`
-- [ ] Move `wikipedia-rag-tutorial-advanced.ipynb` → `foundation/02-rag-postgresql-persistent.ipynb`
-  - Add registry integration: call `register_embedding()` after embedding generation
-  - Add experiment tracking for reproducibility
+#### 1. Move/Reorganize Existing Notebooks ✅ COMPLETE
+- [x] Move `wikipedia-rag-tutorial-simple.ipynb` → `foundation/01-basic-rag-in-memory.ipynb`
+- [x] Move `wikipedia-rag-tutorial-advanced.ipynb` → `foundation/02-rag-postgresql-persistent.ipynb`
+  - [x] Add registry integration: call `register_embedding()` after embedding generation
+  - [x] Updated titles and learning progression sections
+  - [x] Added inline `register_embedding()` function with metadata
+  - [x] Graceful error handling if registry tables don't exist yet
 
 #### 2. Create Intermediate Notebooks
 - [ ] `intermediate/03-loading-and-reusing-embeddings.ipynb`

@@ -93,17 +93,16 @@ docker run -d --name pgvector-rag \
 
 ### Workflow 1: Quick Learning (No Setup)
 ```
-1. Set STORAGE_BACKEND = 'memory'
-2. Run notebook
-3. Learn RAG fundamentals
+1. Run wikipedia-rag-tutorial-simple.ipynb
+2. Learn RAG fundamentals with in-memory storage
 Time: ~1 hour
 ```
 
 ### Workflow 2: Single Experiment (PostgreSQL)
 ```
 1. Start PostgreSQL container (1 min)
-2. Set STORAGE_BACKEND = 'postgresql'
-3. Run notebook to generate embeddings
+2. Run wikipedia-rag-tutorial-advanced.ipynb
+3. Embeddings persist in PostgreSQL
 4. Create analysis notebooks to reuse embeddings
 Time: ~2 hours (50 min generation + 10 min analysis)
 ```
@@ -111,8 +110,8 @@ Time: ~2 hours (50 min generation + 10 min analysis)
 ### Workflow 3: Model Comparison (PostgreSQL)
 ```
 1. Start PostgreSQL once
-2. Generate embeddings with Model A
-3. Generate embeddings with Model B (same data)
+2. Run wikipedia-rag-tutorial-advanced.ipynb with Model A
+3. Run copy of advanced notebook with Model B (same data)
 4. Create comparison notebook
 5. Analyze differences
 Time: ~3+ hours (50 min × 2 models + analysis)

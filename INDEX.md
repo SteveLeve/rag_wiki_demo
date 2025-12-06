@@ -36,7 +36,8 @@ Start here → **[embedding-analysis-template.ipynb](./embedding-analysis-templa
 
 | File | Purpose | Time to Run |
 |------|---------|------------|
-| `wikipedia-rag-tutorial.ipynb` | **Main tutorial** - Learn RAG fundamentals, generate embeddings | 50+ min (depends on dataset size) |
+| `wikipedia-rag-tutorial-simple.ipynb` | **Simple tutorial** - Learn RAG fundamentals with in-memory storage | 50+ min (embeddings regenerate each run) |
+| `wikipedia-rag-tutorial-advanced.ipynb` | **Advanced tutorial** - PostgreSQL for persistent embeddings | 50+ min first run, then 2-5 min for analysis |
 | `embedding-analysis-template.ipynb` | **Experiment template** - Analyze stored embeddings, run comparisons | 2-5 min |
 
 ### Documentation
@@ -62,7 +63,7 @@ Start here → **[embedding-analysis-template.ipynb](./embedding-analysis-templa
 ### Path A: Quick Learning (In-Memory)
 ```
 1. Read: README.md (5 min)
-2. Run: wikipedia-rag-tutorial.ipynb with STORAGE_BACKEND='memory'
+2. Run: wikipedia-rag-tutorial-simple.ipynb
 3. Done! Understand RAG basics
 Time: ~1 hour total
 ```
@@ -72,7 +73,7 @@ Time: ~1 hour total
 1. Read: README.md (5 min)
 2. Read: POSTGRESQL_SETUP.md (10 min)
 3. Start PostgreSQL with Docker (1 min)
-4. Run: wikipedia-rag-tutorial.ipynb with STORAGE_BACKEND='postgresql'
+4. Run: wikipedia-rag-tutorial-advanced.ipynb
 5. Create analysis notebook from template
 Time: ~2 hours total
 ```
@@ -82,8 +83,8 @@ Time: ~2 hours total
 1. Read: README.md (5 min)
 2. Read: QUICK_REFERENCE.md (5 min)
 3. Start PostgreSQL with Docker (1 min)
-4. Run: wikipedia-rag-tutorial.ipynb with Model A
-5. Modify & run: wikipedia-rag-tutorial.ipynb with Model B
+4. Run: wikipedia-rag-tutorial-advanced.ipynb with Model A
+5. Modify & run: wikipedia-rag-tutorial-advanced.ipynb with Model B
 6. Create: analysis notebook comparing both models
 Time: ~3 hours total
 ```
@@ -185,7 +186,9 @@ POSTGRES_CONFIG = {
 ```
 
 ### Full Configuration (All Options)
-See **wikipedia-rag-tutorial.ipynb** - "Configuration" section for all available options.
+See notebooks for all available options:
+- **Simple**: `wikipedia-rag-tutorial-simple.ipynb` - Configuration cell
+- **Advanced**: `wikipedia-rag-tutorial-advanced.ipynb` - Configuration cell
 
 ---
 
@@ -193,18 +196,18 @@ See **wikipedia-rag-tutorial.ipynb** - "Configuration" section for all available
 
 1. **RAG Fundamentals** (30 min)
    - Read: README.md - "🏗️ Architecture" section
-   - Run: wikipedia-rag-tutorial.ipynb cells 1-15 (data loading)
+   - Run: wikipedia-rag-tutorial-simple.ipynb cells 1-10 (data loading)
 
 2. **Embeddings** (20 min)
-   - Run: wikipedia-rag-tutorial.ipynb cells 16-22 (embedding generation)
+   - Run: wikipedia-rag-tutorial-simple.ipynb cells 11-15 (embedding generation)
    - Understand: Vector similarity and cosine distance
 
 3. **Retrieval** (15 min)
-   - Run: wikipedia-rag-tutorial.ipynb cell 24 (retrieve function)
+   - Run: wikipedia-rag-tutorial-simple.ipynb cell 18 (retrieve function)
    - Test: Different query types
 
 4. **Generation** (15 min)
-   - Run: wikipedia-rag-tutorial.ipynb cell 26 (ask_question function)
+   - Run: wikipedia-rag-tutorial-simple.ipynb cell 20 (ask_question function)
    - Understand: Prompt construction and context feeding
 
 5. **Optimization** (30 min)
@@ -245,7 +248,8 @@ rag_wiki_demo/
 ├── ENHANCEMENT_SUMMARY.md                 # What's new
 ├── POSTGRESQL_SETUP.md                    # Detailed PostgreSQL guide
 ├── QUICK_REFERENCE.md                     # Quick lookups
-├── wikipedia-rag-tutorial.ipynb           # Main notebook
+├── wikipedia-rag-tutorial-simple.ipynb    # Simple version (in-memory)
+├── wikipedia-rag-tutorial-advanced.ipynb  # Advanced version (PostgreSQL)
 ├── embedding-analysis-template.ipynb      # Experiment template
 ├── wikipedia_dataset_10mb.json            # Cached data (generated)
 └── wikipedia_vectorize_export.json        # Export example (generated)
@@ -270,8 +274,7 @@ rag_wiki_demo/
 
 ```bash
 # 1. In-memory (simplest)
-jupyter notebook wikipedia-rag-tutorial.ipynb
-# Change: STORAGE_BACKEND = 'memory'
+jupyter notebook wikipedia-rag-tutorial-simple.ipynb
 # Run all cells
 
 # 2. With PostgreSQL (recommended for experiments)
@@ -282,8 +285,7 @@ docker run -d --name pgvector-rag \
 
 pip install psycopg2-binary
 
-jupyter notebook wikipedia-rag-tutorial.ipynb
-# Change: STORAGE_BACKEND = 'postgresql'
+jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
 # Run all cells
 
 # 3. Analyze (create new notebook from template)

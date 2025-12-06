@@ -97,14 +97,14 @@ docker logs pgvector-rag
 
 ### Example 1: Quick Testing (In-Memory)
 ```python
-STORAGE_BACKEND = 'memory'
+# In wikipedia-rag-tutorial-simple.ipynb
 TARGET_SIZE_MB = 10
 SAVE_LOCALLY = False
 ```
 
 ### Example 2: Archive Local Dataset (JSON)
 ```python
-STORAGE_BACKEND = 'json'
+# In wikipedia-rag-tutorial-simple.ipynb
 TARGET_SIZE_MB = 10
 SAVE_LOCALLY = True
 LOCAL_DATASET_PATH = 'wikipedia_dataset_10mb.json'
@@ -112,7 +112,7 @@ LOCAL_DATASET_PATH = 'wikipedia_dataset_10mb.json'
 
 ### Example 3: Production Experiments (PostgreSQL)
 ```python
-STORAGE_BACKEND = 'postgresql'
+# In wikipedia-rag-tutorial-advanced.ipynb
 TARGET_SIZE_MB = 10
 EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
 
@@ -127,13 +127,11 @@ POSTGRES_CONFIG = {
 
 ### Example 4: Compare Two Models (PostgreSQL)
 ```python
-# First run
-STORAGE_BACKEND = 'postgresql'
+# First run (wikipedia-rag-tutorial-advanced.ipynb)
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
 
-# Second run (same data, different model)
-STORAGE_BACKEND = 'postgresql'
+# Second run (copy of advanced notebook with different model)
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-small-en-v1.5-gguf'
 EMBEDDING_MODEL_ALIAS = 'bge_small_en_v1.5'
 

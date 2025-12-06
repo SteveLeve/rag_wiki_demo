@@ -82,23 +82,37 @@ This project serves as a learning platform and proof-of-concept for:
    pip install ollama datasets jupyter
    ```
 
-### Running the Notebook
+### Running the Notebooks
 
-1. Launch Jupyter:
-   ```bash
-   jupyter notebook wikipedia-rag-tutorial.ipynb
-   ```
+**Two versions available:**
 
-2. Configure your storage backend in the Configuration cell:
-   ```python
-   STORAGE_BACKEND = 'memory'  # or 'json' or 'postgresql'
-   TARGET_SIZE_MB = 10  # Start with 10MB for quick testing
-   ```
+#### Simple Version (Recommended for beginners)
+```bash
+jupyter notebook wikipedia-rag-tutorial-simple.ipynb
+```
+- In-memory storage with optional JSON caching
+- No database dependencies
+- Perfect for learning RAG fundamentals
+- Embeddings regenerate on each run (~50 min)
 
-3. Run all cells to:
-   - Download and process Wikipedia articles
-   - Build the vector database
-   - Test with sample queries
+#### Advanced Version (Recommended for experiments)
+```bash
+jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
+```
+- PostgreSQL + pgvector for persistent storage
+- Generate embeddings once, reuse across experiments
+- Store multiple embedding models for comparison
+- Requires Docker and PostgreSQL setup (see below)
+
+**Configuration:**
+```python
+TARGET_SIZE_MB = 10  # Start with 10MB for quick testing
+```
+
+**Run all cells to:**
+- Download and process Wikipedia articles
+- Build the vector database
+- Test with sample queries
 
 ### Using PostgreSQL for Persistent Embeddings (Optional)
 

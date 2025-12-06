@@ -22,14 +22,14 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```bash
   pip install ollama datasets jupyter
   ```
-- [ ] Open notebook:
+- [ ] Open the **simple notebook**:
   ```bash
-  jupyter notebook wikipedia-rag-tutorial.ipynb
+  jupyter notebook wikipedia-rag-tutorial-simple.ipynb
   ```
 - [ ] Verify configuration cell has:
   ```python
-  STORAGE_BACKEND = 'memory'
   TARGET_SIZE_MB = 10
+  SAVE_LOCALLY = True  # Optional: cache dataset
   ```
 - [ ] Run all cells
 - [ ] Ask test questions to verify it works
@@ -74,13 +74,12 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```
 
 ### Notebook Configuration
-- [ ] Open notebook:
+- [ ] Open the **advanced notebook**:
   ```bash
-  jupyter notebook wikipedia-rag-tutorial.ipynb
+  jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
   ```
 - [ ] Find the "Configuration" cell and verify:
   ```python
-  STORAGE_BACKEND = 'postgresql'
   TARGET_SIZE_MB = 10
   
   POSTGRES_CONFIG = {
@@ -95,7 +94,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```
 - [ ] Run all cells
 - [ ] Wait for embedding generation (50 min for 10MB)
-- [ ] Verify success message: "✓ Vector database ready with X embeddings!"
+- [ ] Verify success message: "✓ Vector database ready with X embeddings in PostgreSQL!"
 
 ### Create Analysis Notebook
 - [ ] Read [embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb)
@@ -121,9 +120,9 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Complete Path B first
 
 ### Generate First Model
-- [ ] Open notebook:
+- [ ] Open the **advanced notebook**:
   ```bash
-  jupyter notebook wikipedia-rag-tutorial.ipynb
+  jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
   ```
 - [ ] Use first model (already done from Path B):
   ```python
@@ -136,9 +135,9 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```
 
 ### Generate Second Model
-- [ ] Create a copy of the notebook:
+- [ ] Create a copy of the advanced notebook:
   ```bash
-  cp wikipedia-rag-tutorial.ipynb wikipedia-rag-model2.ipynb
+  cp wikipedia-rag-tutorial-advanced.ipynb wikipedia-rag-model2.ipynb
   ```
 - [ ] Open the copy in Jupyter
 - [ ] Change configuration:

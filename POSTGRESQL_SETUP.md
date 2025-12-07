@@ -40,89 +40,173 @@ docker stop pgvector-rag
 docker start pgvector-rag
 ```
 
-### 2. Configure the Main Notebook
+### 2. Choose Your Learning Path
 
-In `wikipedia-rag-tutorial.ipynb`:
+We provide two separate foundation notebooks:
 
-Change the storage backend from:
+**`foundation/01-basic-rag-in-memory.ipynb`** (In-Memory)
+- Uses simple Python lists for storage
+- No database setup required
+- Perfect for learning RAG fundamentals
+- Embeddings lost on notebook restart
+- Ideal for: Quick experiments, learning concepts
+
+**`foundation/02-rag-postgresql-persistent.ipynb`** (PostgreSQL + Registry)
+- Uses PostgreSQL with pgvector for persistent storage
+- **Automatically registers embeddings in the registry**
+- Supports efficient similarity search with HNSW indexing
+- Embeddings reusable across notebooks
+- Ideal for: Production workflows, reproducible experiments, embedding reuse
+
+### 3. Run the PostgreSQL Notebook
+
+If you choose to use PostgreSQL, just open and run `foundation/02-rag-postgresql-persistent.ipynb`:
+
+1. The notebook will automatically:
+   - Create a PostgreSQL table named `embeddings_bge_base_en_v1_5` (based on your embedding model)
+   - Generate embeddings and store them directly in PostgreSQL
+   - Register the embeddings in the `embedding_registry` table
+   - Print a success message with the registry ID
+
+2. The notebook will ask whether to preserve existing embeddings:
+   - First run: Generates new embeddings
+   - Second run: Reuses existing embeddings (saves 50+ minutes!)
+   - You can override via `PRESERVE_EXISTING_EMBEDDINGS` setting
+
+### 4. Use Registered Embeddings in Advanced Notebooks
+
+Once embeddings are registered, advanced technique notebooks can discover and reuse them:
+
 ```python
-STORAGE_BACKEND = 'memory'
+# In advanced-techniques/05-10 notebooks
+from foundation.load_or_generate_pattern import load_or_generate
+
+# This will find the registered embeddings instead of regenerating
+embeddings = load_or_generate(
+    db=postgres_connection,
+    embedding_model='bge-base-en-v1.5',
+    embedding_alias='bge_base_en_v1.5',
+    preserve_existing=True  # Always use existing
+)
 ```
 
-To:
-```python
-STORAGE_BACKEND = 'postgresql'
-```
-
-The notebook will:
-1. Create a table named `embeddings_bge_base_en_v1_5` (based on your embedding model)
-2. Generate embeddings and stream them directly to PostgreSQL
-3. Enable reuse in other notebooks
-
-### 3. Run the Notebook
-
-Just run the notebook normally. Embeddings will be generated and stored in PostgreSQL as they're created.
-
-### 4. Create Analysis Notebooks
-
-Once embeddings are stored, create new notebooks for experiments. See `embedding-analysis-template.ipynb` for examples.
+See `intermediate/03-loading-and-reusing-embeddings.ipynb` for detailed examples.
 
 ## Multiple Embedding Models
 
-You can store embeddings from different models for comparison:
+You can store embeddings from different models for comparison. The registry makes this easy:
 
-### Main Notebook (bge model)
+### Option 1: Run foundation/02 Multiple Times
+
+**First time with default model:**
 ```python
-STORAGE_BACKEND = 'postgresql'
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+PRESERVE_EXISTING_EMBEDDINGS = False  # Generate new
 ```
 
-Creates table: `embeddings_bge_base_en_v1_5`
+Creates table: `embeddings_bge_base_en_v1_5`  
+Registers in: `embedding_registry` with alias `bge_base_en_v1.5`
 
-### Alternative Notebook (different model)
+**Second time with different model:**
 ```python
-STORAGE_BACKEND = 'postgresql'
 EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
 EMBEDDING_MODEL_ALIAS = 'all_minilm_l6_v2'
+PRESERVE_EXISTING_EMBEDDINGS = False  # Generate new
 ```
 
-Creates table: `embeddings_all_minilm_l6_v2`
+Creates table: `embeddings_all_minilm_l6_v2`  
+Registers in: `embedding_registry` with alias `all_minilm_l6_v2`
 
-Then in analysis notebooks, you can load and compare both:
+### Option 2: Compare Models in Advanced Notebooks
+
+Use `intermediate/04-comparing-embedding-models.ipynb` to:
 
 ```python
-db_bge = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_bge_base_en_v1_5')
-db_minilm = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_all_minilm_l6_v2')
+# Discover both models from registry
+available_models = list_available_embeddings(db)
+# Shows both bge_base_en_v1.5 and all_minilm_l6_v2
 
-# Compare retrieval results for the same query
+# Load both from registry (reuses stored embeddings)
+bge_embeddings = load_or_generate(db, model, 'bge_base_en_v1.5', preserve_existing=True)
+minilm_embeddings = load_or_generate(db, model, 'all_minilm_l6_v2', preserve_existing=True)
+
+# Compare retrieval results for the same queries
+for query in test_queries:
+    bge_results = retrieve_with_model(query, bge_embeddings, top_k=5)
+    minilm_results = retrieve_with_model(query, minilm_embeddings, top_k=5)
+    compare_results(bge_results, minilm_results)
 ```
 
-## Storage Backend Options
+## Foundation Notebook Comparison
 
-### Memory (`'memory'`)
+### Foundation 01: In-Memory (Simple)
+- **Storage**: Python lists and dictionaries
+- **Persistence**: Lost on notebook restart
+- **Setup**: None required
+- **Speed**: Fastest
+- **Reuse**: Not supported
+- **Best for**: Learning fundamentals, quick experiments
+- **Registry**: Not used
+
+### Foundation 02: PostgreSQL (Persistent)
+- **Storage**: PostgreSQL with pgvector
+- **Persistence**: Durable, survives restarts
+- **Setup**: Docker required
+- **Speed**: Slower generation, instant reuse
+- **Reuse**: Yes - embeddings registered in registry
+- **Best for**: Production workflows, multiple experiments, embedding reuse
+- **Registry**: Automatic registration with metadata
+
+### When to Use Each
+
+**Use Foundation 01 if:**
+- Learning RAG concepts
+- Quick one-off experiments
+- No database available
+- Testing without setup
+
+**Use Foundation 02 if:**
+- Regenerating 50+ minute embeddings is expensive
+- Need embeddings across multiple experiments
+- Building production system
+- Comparing different techniques
+- Setting up for advanced techniques (05-10)
+
+## Key Concepts
+
+### Registry Integration
+
+The embedding registry (`embedding_registry` table) enables:
+- **Discovery**: Find registered embeddings by model alias
+- **Metadata Context**: Know dimension, chunk size, source dataset
+- **Reuse**: Avoid 50+ minute regeneration with `load_or_generate()`
+- **Reproducibility**: Track which embeddings were used in each experiment
+
+### Data Preservation Settings
+
+Foundation 02 asks on second run: "Embeddings already exist. Preserve or regenerate?"
+
 ```python
-STORAGE_BACKEND = 'memory'
+# Control this behavior with PRESERVE_EXISTING_EMBEDDINGS:
+PRESERVE_EXISTING_EMBEDDINGS = None     # Prompt user (default)
+PRESERVE_EXISTING_EMBEDDINGS = True     # Always reuse
+PRESERVE_EXISTING_EMBEDDINGS = False    # Always regenerate
 ```
-- **Pros**: Fastest, no setup needed
-- **Cons**: Lost on notebook restart
-- **Best for**: Quick experiments and testing
 
-### JSON File (`'json'`)
-```python
-STORAGE_BACKEND = 'json'
-```
-- **Pros**: Persists across restarts, portable
-- **Cons**: Slower for large datasets, all data loaded into memory
-- **Best for**: Small datasets, sharing/backup
+This prevents accidentally losing hours of embedding generation work!
 
-### PostgreSQL (`'postgresql'`)
-```python
-STORAGE_BACKEND = 'postgresql'
-```
-- **Pros**: Durable, efficient similarity search, supports multiple models
-- **Cons**: Requires Docker and psycopg2 library
-- **Best for**: Production workflows, multiple experiments
+### Performance Impact
+
+**Foundation 01 (In-Memory):**
+- Generation: 5-10 minutes
+- Reuse: Not available (lost on restart)
+- Regeneration: Required for new notebook
+
+**Foundation 02 (PostgreSQL):**
+- Generation: 5-10 minutes (first run)
+- Reuse: Instant (subsequent runs)
+- Registry: Enables discovery and reuse across all notebooks
 
 ## Installing Required Packages
 

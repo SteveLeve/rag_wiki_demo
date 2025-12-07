@@ -1,298 +1,303 @@
-# Project Documentation Index
+# Project Documentation & Learning Path Index
 
-## Getting Started
+## 🎯 Quick Navigation
 
-### I'm new to this project
-Start here → **[README.md](./README.md)**
-- Overview of the RAG system
-- 5-minute quick start
-- Architecture diagram
-- Dataset specifications
+### Choose Your Learning Path
+- **New to RAG?** → Start with [foundation/README.md](./foundation/README.md) for guided learning paths
+- **Want to understand the system?** → Read [README.md](./README.md) first (10 min)
+- **Need PostgreSQL setup?** → See [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)
+- **Looking for quick reference?** → Check [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
 
-### I want to set up PostgreSQL
-Start here → **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)**
-- Step-by-step Docker setup
-- Connection configuration
-- Data persistence strategies
-- Troubleshooting guide
+---
 
-### I'm not sure which storage backend to use
-Start here → **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)**
-- Decision tree for backend choice
-- Quick comparison table
-- Common commands
-- Example configurations
+## 📚 Directory Structure
 
-### I want to see working code examples
-Start here → **[embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb)**
-- Load pre-computed embeddings
-- Run retrieval quality analysis
-- Compare embedding models
-- Statistical analysis examples
+### `foundation/` - Start Here!
+**Complete learning foundation for RAG systems**
 
-## Project Files Overview
+| Notebook | Purpose | Time | Setup |
+|----------|---------|------|-------|
+| [README.md](./foundation/README.md) | **READ FIRST** - Learning paths, concepts, troubleshooting | 15 min | None |
+| `00-setup-postgres-schema.ipynb` | Create PostgreSQL schema (run once) | 5 min | PostgreSQL required |
+| `00-registry-and-tracking-utilities.ipynb` | Reference utilities (copy-paste, not standalone) | - | PostgreSQL |
+| `00-load-or-generate-pattern.ipynb` | Reference pattern documentation | - | PostgreSQL |
+| `01-basic-rag-in-memory.ipynb` | **Learn RAG basics** - In-memory, no DB setup | 45 min | Ollama only ⭐ |
+| `02-rag-postgresql-persistent.ipynb` | **Learn RAG production pattern** - PostgreSQL storage | 60 min | Ollama + PostgreSQL |
 
-### Notebooks
+**Your next step?** Open `foundation/README.md` to choose Path A, B, or C.
 
-| File | Purpose | Time to Run |
-|------|---------|------------|
-| `wikipedia-rag-tutorial-simple.ipynb` | **Simple tutorial** - Learn RAG fundamentals with in-memory storage | 50+ min (embeddings regenerate each run) |
-| `wikipedia-rag-tutorial-advanced.ipynb` | **Advanced tutorial** - PostgreSQL for persistent embeddings | 50+ min first run, then 2-5 min for analysis |
-| `embedding-analysis-template.ipynb` | **Experiment template** - Analyze stored embeddings, run comparisons | 2-5 min |
+### `intermediate/` - After Foundation
+**Bridge to advanced techniques through practical patterns**
 
-### Documentation
+| Notebook | Purpose | Prerequisites | Time |
+|----------|---------|---|------|
+| `03-loading-and-reusing-embeddings.ipynb` | **Master the registry pattern** - Avoid 50+ min regenerations | foundation/00-02 | 30 min |
+| `04-comparing-embedding-models.ipynb` | **Compare embedding models** - Quality vs. speed tradeoffs | foundation/00-02 + intermediate/03 | 60 min |
+
+### `advanced-techniques/` - Specialized Improvements
+**Production RAG techniques (partially implemented)**
+
+| Notebook | Technique | Status |
+|----------|-----------|--------|
+| `05-reranking.ipynb` | Cross-encoder reranking to improve precision | 🔴 Stub |
+| `06-query-expansion.ipynb` | LLM-based query expansion to improve recall | 🔴 Stub |
+| `07-hybrid-search.ipynb` | Combine vector + BM25 keyword search | 🔴 Stub |
+| `08-semantic-chunking.ipynb` | Intelligent document splitting | 🔴 Stub |
+| `09-citation-tracking.ipynb` | Track sources and confidence scores | 🔴 Stub |
+| `10-combined-advanced-rag.ipynb` | Unified pipeline with all techniques | 🔴 Stub |
+
+### `evaluation-lab/` - Measure Quality
+**Systematic evaluation and experimentation framework**
+
+| Notebook | Purpose | Status |
+|----------|---------|--------|
+| `01-create-ground-truth-human-in-loop.ipynb` | Build curated test set (LLM + human) | 🔴 Stub |
+| `02-evaluation-metrics-framework.ipynb` | Compute Precision@K, Recall, NDCG, etc. | 🔴 Stub |
+| `03-baseline-and-comparison.ipynb` | Compare different techniques systematically | 🔴 Stub |
+| `04-experiment-dashboard.ipynb` | Visualize results and trends | 🔴 Stub |
+| `05-supplemental-embedding-analysis.ipynb` | Deep-dive: Query types, speed profiles, model comparison | ✅ Complete |
+
+---
+
+## 📖 Documentation Files
 
 | File | Purpose | Read Time |
 |------|---------|-----------|
-| `README.md` | Project overview, quick start, architecture | 10 min |
-| `POSTGRESQL_SETUP.md` | PostgreSQL/pgvector detailed setup guide | 10 min |
-| `QUICK_REFERENCE.md` | Quick lookup guide, decision trees, commands | 5 min |
-| `ENHANCEMENT_SUMMARY.md` | Summary of PostgreSQL integration features | 5 min |
+| [README.md](./README.md) | Project overview, quick start, architecture | 10 min |
+| [foundation/README.md](./foundation/README.md) | **START HERE** - Learning paths, concepts, decision tree | 15 min |
+| [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) | PostgreSQL/pgvector detailed setup and configuration | 10 min |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | Quick lookup guide, commands, decision trees | 5 min |
+| [LEARNING_ROADMAP.md](./LEARNING_ROADMAP.md) | Detailed learning progression, time estimates, success criteria | 10 min |
+| [EVALUATION_GUIDE.md](./EVALUATION_GUIDE.md) | Comprehensive evaluation methodology and metrics | 15 min |
+| [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Step-by-step testing procedures and validation | 10 min |
+| [IMPLEMENTATION_PROGRESS.md](./IMPLEMENTATION_PROGRESS.md) | What's been built, what's pending | 5 min |
 
-### Data Files
+### Legacy Files
 
-| File | Purpose | Size |
-|------|---------|------|
-| `wikipedia_dataset_10mb.json` | Cached dataset (optional, saves download time) | ~10MB |
-| `wikipedia_vectorize_export.json` | Example export format for other platforms | ~20MB |
+| File | Purpose | Status |
+|------|---------|--------|
+| `wikipedia_dataset_10mb.json` | Cached dataset (generated by foundation/01-02) | Generated |
+| `wikipedia_vectorize_export.json` | Example export format | Generated |
+| `embedding-analysis-template.ipynb` | Old analysis template (replaced by evaluation-lab/05) | Archived |
 
 ---
 
-## Workflow Paths
+## 🎓 Learning Paths
 
-### Path A: Quick Learning (In-Memory)
+### Path A: Learn RAG Basics (1-2 hours)
 ```
-1. Read: README.md (5 min)
-2. Run: wikipedia-rag-tutorial-simple.ipynb
-3. Done! Understand RAG basics
-Time: ~1 hour total
+1. Read: foundation/README.md (15 min)
+2. Run: foundation/01-basic-rag-in-memory.ipynb (45 min)
+3. Done! Understand RAG fundamentals
+
+Key concept: In-memory processing, no database complexity
 ```
 
-### Path B: Single Deep Dive (PostgreSQL)
+### Path B: Build Production Systems (3-4 hours)
 ```
-1. Read: README.md (5 min)
-2. Read: POSTGRESQL_SETUP.md (10 min)
+1. foundation/ README.md (15 min)
+2. POSTGRESQL_SETUP.md (10 min)
 3. Start PostgreSQL with Docker (1 min)
-4. Run: wikipedia-rag-tutorial-advanced.ipynb
-5. Create analysis notebook from template
-Time: ~2 hours total
+4. foundation/00-setup-postgres-schema.ipynb (5 min)
+5. foundation/02-rag-postgresql-persistent.ipynb (45 min)
+6. intermediate/03-loading-and-reusing-embeddings.ipynb (30 min)
+
+Key concept: Persistent storage, embedding registry, reusable patterns
 ```
 
-### Path C: Model Comparison (PostgreSQL + Multiple Experiments)
+### Path C: Master Advanced Techniques (6-8+ hours)
 ```
-1. Read: README.md (5 min)
-2. Read: QUICK_REFERENCE.md (5 min)
-3. Start PostgreSQL with Docker (1 min)
-4. Run: wikipedia-rag-tutorial-advanced.ipynb with Model A
-5. Modify & run: wikipedia-rag-tutorial-advanced.ipynb with Model B
-6. Create: analysis notebook comparing both models
-Time: ~3 hours total
+1. [Path B] (3-4 hours)
+2. intermediate/04-comparing-embedding-models.ipynb (60 min)
+3. advanced-techniques/ (your choice of 05-10, when implemented)
+4. evaluation-lab/ (when implemented)
+
+Key concept: Rapid experimentation with pre-registered embeddings
 ```
 
 ---
 
-## Key Concepts
+## ⚡ Quick Start
 
-### Storage Backends
-
-**In-Memory** (`'memory'`)
-- Perfect for: Learning, quick testing
-- Setup: None needed
-- Data persistence: Lost on restart
-
-**JSON** (`'json'`)
-- Perfect for: Archiving small datasets
-- Setup: None needed
-- Data persistence: Saved to file
-
-**PostgreSQL** (`'postgresql'`)
-- Perfect for: Multi-experiment workflows
-- Setup: Docker (2 minutes)
-- Data persistence: Durable, queryable
-
-See **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** for detailed comparison.
-
-### Table Naming for Multiple Models
-
-Embeddings are stored in tables named: `embeddings_{model_alias}`
-
-Examples:
-- `embeddings_bge_base_en_v1_5` (from `EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'`)
-- `embeddings_all_minilm_l6_v2` (from `EMBEDDING_MODEL_ALIAS = 'all_minilm_l6_v2'`)
-
-This lets you store and compare multiple models without conflicts.
-
-### pgvector for Similarity Search
-
-pgvector provides:
-- HNSW indexing for fast vector search (~1ms queries)
-- Native cosine similarity operators
-- Automatic index creation
-- Scalability to millions of vectors
-
----
-
-## Common Tasks
-
-### "I want to start fresh"
+### Option 1: Learn RAG Basics (No Database)
 ```bash
-# Reset everything
-docker stop pgvector-rag
-docker volume rm pgvector_data
-rm wikipedia_dataset_10mb.json
+# In your terminal:
+pip install ollama datasets jupyter
+ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
+ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+
+# Then in Jupyter:
+cd foundation
+jupyter notebook 01-basic-rag-in-memory.ipynb
+# Run all cells sequentially
 ```
 
-### "I want to compare two embedding models"
-1. See **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - "Example 4: Compare Two Models"
-2. See **[embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb)** - Section "2. Compare Embedding Models"
-
-### "I want to understand my retrieval quality"
-1. See **[embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb)** - Section "1. Analyze Query Performance"
-
-### "I'm seeing slow queries"
-1. See **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)** - "Troubleshooting" section
-2. Check if pgvector index was created (it's created automatically)
-
-### "I want to backup my embeddings"
-1. See **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)** - "Data Persistence" section
-
-### "I want to move to production"
-1. See **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)** - "Advanced: Using Other Vector Databases" section
-2. Also see **README.md** - "Production Deployment" section
-
----
-
-## Configuration Quick Reference
-
-### Minimal Configuration (In-Memory)
-```python
-STORAGE_BACKEND = 'memory'
-TARGET_SIZE_MB = 10
-```
-
-### Recommended Configuration (PostgreSQL)
-```python
-STORAGE_BACKEND = 'postgresql'
-TARGET_SIZE_MB = 10
-EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
-
-POSTGRES_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'database': 'rag_db',
-    'user': 'postgres',
-    'password': 'postgres',
-}
-```
-
-### Full Configuration (All Options)
-See notebooks for all available options:
-- **Simple**: `wikipedia-rag-tutorial-simple.ipynb` - Configuration cell
-- **Advanced**: `wikipedia-rag-tutorial-advanced.ipynb` - Configuration cell
-
----
-
-## Learning Path for RAG Concepts
-
-1. **RAG Fundamentals** (30 min)
-   - Read: README.md - "🏗️ Architecture" section
-   - Run: wikipedia-rag-tutorial-simple.ipynb cells 1-10 (data loading)
-
-2. **Embeddings** (20 min)
-   - Run: wikipedia-rag-tutorial-simple.ipynb cells 11-15 (embedding generation)
-   - Understand: Vector similarity and cosine distance
-
-3. **Retrieval** (15 min)
-   - Run: wikipedia-rag-tutorial-simple.ipynb cell 18 (retrieve function)
-   - Test: Different query types
-
-4. **Generation** (15 min)
-   - Run: wikipedia-rag-tutorial-simple.ipynb cell 20 (ask_question function)
-   - Understand: Prompt construction and context feeding
-
-5. **Optimization** (30 min)
-   - Use: embedding-analysis-template.ipynb for experiments
-   - Compare: Different configurations and models
-
----
-
-## Troubleshooting Decision Tree
-
-```
-Does it work locally with 'memory' backend?
-├─ NO
-│  └─ Check: Ollama is running, models are downloaded
-│     Run in terminal: ollama list
-│
-└─ YES
-   │
-   ├─ Want to use PostgreSQL?
-   │  ├─ NO → You're done! Enjoy development.
-   │  │
-   │  └─ YES
-   │     ├─ Docker installed?
-   │     │  ├─ NO → Install Docker Desktop
-   │     │  └─ YES → See: POSTGRESQL_SETUP.md
-   │     │
-   │     └─ Getting connection error?
-   │        └─ See: POSTGRESQL_SETUP.md - "Troubleshooting"
-```
-
----
-
-## File Structure
-
-```
-rag_wiki_demo/
-├── README.md                              # Start here
-├── ENHANCEMENT_SUMMARY.md                 # What's new
-├── POSTGRESQL_SETUP.md                    # Detailed PostgreSQL guide
-├── QUICK_REFERENCE.md                     # Quick lookups
-├── wikipedia-rag-tutorial-simple.ipynb    # Simple version (in-memory)
-├── wikipedia-rag-tutorial-advanced.ipynb  # Advanced version (PostgreSQL)
-├── embedding-analysis-template.ipynb      # Experiment template
-├── wikipedia_dataset_10mb.json            # Cached data (generated)
-└── wikipedia_vectorize_export.json        # Export example (generated)
-```
-
----
-
-## Getting Help
-
-| Issue | Solution |
-|-------|----------|
-| "I don't understand RAG" | Read README.md → "RAG System Fundamentals" |
-| "How do I set up PostgreSQL?" | Read POSTGRESQL_SETUP.md |
-| "Which storage backend should I use?" | Read QUICK_REFERENCE.md → "Storage Backend Decision Tree" |
-| "How do I load existing embeddings?" | See embedding-analysis-template.ipynb → cell 8 |
-| "I get a connection error" | Read POSTGRESQL_SETUP.md → "Troubleshooting" |
-| "What are my next steps?" | See this file → "Workflow Paths" |
-
----
-
-## Quick Start (TL;DR)
-
+### Option 2: Learn with PostgreSQL (Recommended)
 ```bash
-# 1. In-memory (simplest)
-jupyter notebook wikipedia-rag-tutorial-simple.ipynb
-# Run all cells
-
-# 2. With PostgreSQL (recommended for experiments)
+# Terminal 1: Start PostgreSQL
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=rag_db \
   -p 5432:5432 -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 
-pip install psycopg2-binary
+# Terminal 2: Install Python packages
+pip install ollama datasets jupyter psycopg2-binary
+ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
+ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
 
-jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
-# Run all cells
-
-# 3. Analyze (create new notebook from template)
-jupyter notebook embedding-analysis-template.ipynb
+# Terminal 3: Run Jupyter
+cd foundation
+jupyter notebook
+# Open 00-setup-postgres-schema.ipynb → Run all cells
+# Open 02-rag-postgresql-persistent.ipynb → Run all cells
 ```
 
 ---
 
-**Last Updated**: December 2025
-**PostgreSQL Integration**: ✅ Complete
+## 🔍 Navigation by Goal
+
+### I want to...
+
+#### "...understand RAG from scratch"
+1. Read: `foundation/README.md` (choose your path)
+2. Read: `README.md` - "Architecture" section
+3. Run: `foundation/01-basic-rag-in-memory.ipynb`
+
+#### "...avoid 50+ minute regenerations"
+1. Read: `intermediate/03-loading-and-reusing-embeddings.ipynb` introduction
+2. Run: `foundation/00-setup-postgres-schema.ipynb` (once)
+3. Run: `foundation/02-rag-postgresql-persistent.ipynb` (once to generate)
+4. Run: `intermediate/03-loading-and-reusing-embeddings.ipynb` (instant load)
+
+#### "...compare embedding models"
+1. Prerequisites: Follow "avoid regenerations" path above
+2. Run: `intermediate/04-comparing-embedding-models.ipynb`
+
+#### "...evaluate RAG quality"
+1. Run: `evaluation-lab/05-supplemental-embedding-analysis.ipynb`
+2. When available: `evaluation-lab/01-04` for full evaluation
+
+#### "...implement advanced techniques"
+1. Prerequisites: Complete "Build Production Systems" path
+2. Choose from `advanced-techniques/05-10` (when implemented)
+3. Use `evaluation-lab` for systematic comparison
+
+#### "...move to production"
+1. Read: `POSTGRESQL_SETUP.md` - "Production Deployment" section
+2. See: `README.md` - "Production Considerations"
+3. Reference: `evaluation-lab` for quality benchmarking
+
+---
+
+## 🐛 Troubleshooting Guide
+
+See **[foundation/README.md](./foundation/README.md)** for a complete troubleshooting section with solutions to common issues.
+
+### Quick Fixes
+
+| Problem | Solution |
+|---------|----------|
+| "Can't connect to Ollama" | Start Ollama app, or run `ollama serve` in terminal |
+| "ModuleNotFoundError: ollama" | `pip install ollama` |
+| "PostgreSQL connection failed" | Check: docker ps (is pgvector-rag running?) |
+| "ModuleNotFoundError: psycopg2" | `pip install psycopg2-binary` |
+| "Embeddings take forever to generate" | That's normal! (~2 min per 100 chunks). Use intermediate/03 to reuse them next time. |
+
+---
+
+## 📊 System Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Your Jupyter Notebooks                 │
+├─────────────────────────────────────────────────────────┤
+│
+│  foundation/               (Learn RAG concepts)
+│  ├─ 01: In-Memory RAG     (simple, no DB)
+│  └─ 02: PostgreSQL RAG    (persistent, registry)
+│
+│  intermediate/             (Learn patterns)
+│  ├─ 03: Registry Loading   (reuse embeddings)
+│  └─ 04: Model Comparison   (quality vs. speed)
+│
+│  advanced-techniques/      (Experimental)
+│  ├─ 05-10: Various techniques (reranking, expansion, etc.)
+│
+│  evaluation-lab/           (Measure quality)
+│  ├─ 01-04: Evaluation framework
+│  └─ 05: Embedding analysis
+│
+├─────────────────────────────────────────────────────────┤
+│                    Embedding Generation                   │
+│  ├─ Ollama (Local LLMs)                                  │
+│  │  ├─ BGE-Base-EN-v1.5 (768 dimensions) ⭐ Recommended |
+│  │  ├─ BGE-Small-EN-v1.5 (384 dimensions)                |
+│  │  └─ Llama-3.2-1B-Instruct (generation)                |
+│
+├─────────────────────────────────────────────────────────┤
+│              Persistent Storage (PostgreSQL)              │
+│  ├─ embedding_registry      (catalog of models)          |
+│  ├─ embedding_bge_base_*    (actual embeddings)          |
+│  ├─ evaluation_groundtruth   (test questions)            |
+│  ├─ experiments             (technique runs)             |
+│  └─ evaluation_results      (computed metrics)           |
+│                             (pgvector enabled)           |
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📈 Implementation Status
+
+### Phase 1: Infrastructure ✅
+- [x] Directory structure
+- [x] PostgreSQL schema (4 tables, 6 indexes)
+- [x] foundation/00-02 notebooks complete
+- [x] Registry pattern implemented
+- [x] Load-or-generate pattern documented
+- [x] foundation/README.md with learning paths
+
+### Phase 2: Learning Path ✅
+- [x] intermediate/03-loading-and-reusing-embeddings
+- [x] intermediate/04-comparing-embedding-models  
+- [x] evaluation-lab/05-supplemental-embedding-analysis
+- [x] Comprehensive documentation
+
+### Phase 3: Advanced Techniques 🔄
+- [ ] advanced-techniques/05-10 (implementation pending)
+- [ ] evaluation-lab/01-04 (implementation pending)
+
+### Phase 4: Documentation ✅
+- [x] INDEX.md (you are here)
+- [x] foundation/README.md
+- [x] LEARNING_ROADMAP.md
+- [x] EVALUATION_GUIDE.md
+- [x] TESTING_GUIDE.md
+- [x] POSTGRESQL_SETUP.md updated
+
+---
+
+## 🚀 Next Steps
+
+1. **Open `foundation/README.md`** - Choose Path A, B, or C
+2. **Run the appropriate foundation notebooks** for your path
+3. **Explore intermediate/ notebooks** to learn patterns
+4. **Check back** when advanced-techniques and evaluation-lab are ready
+
+---
+
+## 📝 File Organization Philosophy
+
+The project is organized by **learning progression**, not by feature:
+
+- **foundation/** = Foundational RAG concepts (everyone starts here)
+- **intermediate/** = Bridge patterns and techniques (after foundation)
+- **advanced-techniques/** = Specialized improvements (when ready)
+- **evaluation-lab/** = Systematic measurement (when ready)
+
+Each directory has its own README explaining its role.
+
+---
+
+**Last Updated:** December 7, 2025
+**Status:** Phase 2 Complete ✅ | Phase 3 Pending

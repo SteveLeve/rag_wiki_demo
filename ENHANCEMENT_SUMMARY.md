@@ -1,8 +1,8 @@
-# Enhancement Summary: PostgreSQL & pgvector Integration
+# Enhancement Summary: RAG Learning Platform
 
 ## What's New
 
-Your RAG tutorial has been enhanced with **persistent storage support** for embeddings using PostgreSQL and pgvector. This addresses the key challenge of 50+ minute embedding generation time and enables multi-experiment workflows.
+This project has been reorganized into a comprehensive **four-layer RAG learning platform** with clear progression from fundamentals to advanced techniques, plus systematic evaluation frameworks. Legacy notebooks have been migrated to organized directory structure with comprehensive READMEs for each layer.
 
 ## Files Added/Modified
 

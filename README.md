@@ -84,63 +84,44 @@ This project serves as a learning platform and proof-of-concept for:
 
 ### Running the Notebooks
 
-**Two versions available:**
+This project is organized in layers by complexity. **Start with foundation/**:
 
-#### Simple Version (Recommended for beginners)
-```bash
-jupyter notebook wikipedia-rag-tutorial-simple.ipynb
-```
-- In-memory storage with optional JSON caching
-- No database dependencies
-- Perfect for learning RAG fundamentals
-- Embeddings regenerate on each run (~50 min)
+#### Foundation Layer (Start Here!)
+The `foundation/` directory contains 5 well-documented notebooks:
 
-#### Advanced Version (Recommended for experiments)
-```bash
-jupyter notebook wikipedia-rag-tutorial-advanced.ipynb
-```
-- PostgreSQL + pgvector for persistent storage
-- Generate embeddings once, reuse across experiments
-- Store multiple embedding models for comparison
-- Requires Docker and PostgreSQL setup (see below)
-
-**Configuration:**
-```python
-TARGET_SIZE_MB = 10  # Start with 10MB for quick testing
-```
-
-**Run all cells to:**
-- Download and process Wikipedia articles
-- Build the vector database
-- Test with sample queries
-
-### Using PostgreSQL for Persistent Embeddings (Optional)
-
-To avoid regenerating embeddings (which takes 50+ minutes), use PostgreSQL + pgvector:
-
-1. Start PostgreSQL with Docker:
+1. **01-basic-rag-in-memory.ipynb** (Recommended for beginners)
    ```bash
-   docker run -d --name pgvector-rag \
-     -e POSTGRES_PASSWORD=postgres \
-     -e POSTGRES_DB=rag_db \
-     -p 5432:5432 \
-     -v pgvector_data:/var/lib/postgresql/data \
-     pgvector/pgvector:pg16
+   jupyter notebook foundation/01-basic-rag-in-memory.ipynb
    ```
+   - In-memory storage (no database needed)
+   - Perfect for learning RAG fundamentals
+   - Quick start section included
+   - 🚀 Takes 5-10 minutes to get started
 
-2. Install the PostgreSQL adapter:
+2. **02-rag-postgresql-persistent.ipynb** (For persistence & comparison)
    ```bash
-   pip install psycopg2-binary
+   jupyter notebook foundation/02-rag-postgresql-persistent.ipynb
    ```
+   - PostgreSQL + pgvector for persistent storage
+   - Embeddings registered in registry for reuse
+   - Multiple embedding models for comparison
+   - Automatic experiment tracking
 
-3. Change configuration in the notebook:
-   ```python
-   STORAGE_BACKEND = 'postgresql'
-   ```
+**First time setup:**
+1. Run `foundation/00-setup-postgres-schema.ipynb` (one-time PostgreSQL setup)
+2. Run `foundation/01-basic-rag-in-memory.ipynb` (standalone, no database)
+3. Then run `foundation/02-rag-postgresql-persistent.ipynb` (if you want persistence)
 
-4. Create analysis notebooks that load stored embeddings without regeneration
+For detailed setup, see **[foundation/README.md](./foundation/README.md)** or **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)**
 
-For detailed setup, see **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)**
+### Next Steps
+
+After foundation, explore:
+- **intermediate/** - Registry discovery & model comparison (10-20 min)
+- **advanced-techniques/** - Reranking, query expansion, hybrid search, etc. (4-6 hours)
+- **evaluation-lab/** - Measure RAG quality with metrics (3-5 hours)
+
+See **[INDEX.md](./INDEX.md)** for complete learning paths.
 
 ## 📊 Dataset Specifications
 

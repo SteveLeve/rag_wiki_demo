@@ -97,14 +97,14 @@ docker logs pgvector-rag
 
 ### Example 1: Quick Testing (In-Memory)
 ```python
-# In wikipedia-rag-tutorial-simple.ipynb
+# In foundation/01-basic-rag-in-memory.ipynb
 TARGET_SIZE_MB = 10
 SAVE_LOCALLY = False
 ```
 
 ### Example 2: Archive Local Dataset (JSON)
 ```python
-# In wikipedia-rag-tutorial-simple.ipynb
+# In foundation/01-basic-rag-in-memory.ipynb
 TARGET_SIZE_MB = 10
 SAVE_LOCALLY = True
 LOCAL_DATASET_PATH = 'wikipedia_dataset_10mb.json'
@@ -112,7 +112,7 @@ LOCAL_DATASET_PATH = 'wikipedia_dataset_10mb.json'
 
 ### Example 3: Production Experiments (PostgreSQL)
 ```python
-# In wikipedia-rag-tutorial-advanced.ipynb
+# In foundation/02-rag-postgresql-persistent.ipynb
 TARGET_SIZE_MB = 10
 EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
 

@@ -29,32 +29,33 @@
 ### `intermediate/` - After Foundation
 **Bridge to advanced techniques through practical patterns**
 
-| Notebook | Purpose | Prerequisites | Time |
-|----------|---------|---|------|
-| `03-loading-and-reusing-embeddings.ipynb` | **Master the registry pattern** - Avoid 50+ min regenerations | foundation/00-02 | 30 min |
-| `04-comparing-embedding-models.ipynb` | **Compare embedding models** - Quality vs. speed tradeoffs | foundation/00-02 + intermediate/03 | 60 min |
+| Notebook | Purpose | Prerequisites | Time | Status |
+|----------|---------|---|------|--------|
+| [INDEX.ipynb](./intermediate/INDEX.ipynb) | **Navigation hub** - Overview and learning paths | None | 5 min | ✅ Complete |
+| `03-loading-and-reusing-embeddings.ipynb` | **Master the registry pattern** - Avoid 50+ min regenerations | foundation/00-02 | 30 min | ✅ Complete |
+| `04-comparing-embedding-models.ipynb` | **Compare embedding models** - Quality vs. speed tradeoffs | foundation/00-02 + intermediate/03 | 60 min | ✅ Complete |
 
 ### `advanced-techniques/` - Specialized Improvements
-**Production RAG techniques (partially implemented)**
+**Production RAG techniques - ALL COMPLETE**
 
 | Notebook | Technique | Status |
 |----------|-----------|--------|
-| `05-reranking.ipynb` | Cross-encoder reranking to improve precision | 🔴 Stub |
-| `06-query-expansion.ipynb` | LLM-based query expansion to improve recall | 🔴 Stub |
-| `07-hybrid-search.ipynb` | Combine vector + BM25 keyword search | 🔴 Stub |
-| `08-semantic-chunking.ipynb` | Intelligent document splitting | 🔴 Stub |
-| `09-citation-tracking.ipynb` | Track sources and confidence scores | 🔴 Stub |
-| `10-combined-advanced-rag.ipynb` | Unified pipeline with all techniques | 🔴 Stub |
+| `05-reranking.ipynb` | Cross-encoder reranking (+10-20% Precision@5) | ✅ Complete |
+| `06-query-expansion.ipynb` | LLM-based query expansion (+15-30% Recall) | ✅ Complete |
+| `07-hybrid-search.ipynb` | Vector + BM25 + RRF fusion (better robustness) | ✅ Complete |
+| `08-semantic-chunking-and-metadata.ipynb` | Semantic chunking + metadata filtering | ✅ Complete |
+| `09-citation-tracking.ipynb` | Source attribution + confidence scoring | ✅ Complete |
+| `10-combined-advanced-rag.ipynb` | Unified pipeline with all techniques | ✅ Complete |
 
 ### `evaluation-lab/` - Measure Quality
-**Systematic evaluation and experimentation framework**
+**Systematic evaluation and experimentation framework - ALL COMPLETE**
 
 | Notebook | Purpose | Status |
 |----------|---------|--------|
-| `01-create-ground-truth-human-in-loop.ipynb` | Build curated test set (LLM + human) | 🔴 Stub |
-| `02-evaluation-metrics-framework.ipynb` | Compute Precision@K, Recall, NDCG, etc. | 🔴 Stub |
-| `03-baseline-and-comparison.ipynb` | Compare different techniques systematically | 🔴 Stub |
-| `04-experiment-dashboard.ipynb` | Visualize results and trends | 🔴 Stub |
+| `01-create-ground-truth-human-in-loop.ipynb` | Build curated test set (LLM + human curation) | ✅ Complete |
+| `02-evaluation-metrics-framework.ipynb` | Compute Precision@K, Recall, NDCG, MRR | ✅ Complete |
+| `03-baseline-and-comparison.ipynb` | Compare techniques with statistical testing | ✅ Complete |
+| `04-experiment-dashboard.ipynb` | Visualize results, Pareto frontiers, leaderboards | ✅ Complete |
 | `05-supplemental-embedding-analysis.ipynb` | Deep-dive: Query types, speed profiles, model comparison | ✅ Complete |
 
 ---

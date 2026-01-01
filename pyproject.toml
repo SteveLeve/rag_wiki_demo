@@ -53,9 +53,19 @@ dev = [
     "pytest-watch>=4.2.0",
 ]
 
+# Visualization dependencies (for charts/plots in notebooks)
+viz = [
+    "matplotlib>=3.10.0",
+]
+
+# Advanced RAG techniques dependencies
+advanced = [
+    "sentence-transformers>=5.0.0",  # For reranking with cross-encoders
+]
+
 # All optional dependencies
 all = [
-    "rag_wiki_demo[test,dev]",
+    "rag_wiki_demo[test,dev,viz,advanced]",
 ]
 
 [project.urls]

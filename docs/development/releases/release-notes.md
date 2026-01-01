@@ -69,7 +69,7 @@ A comprehensive testing framework establishing production-grade code quality and
 
 **Key Achievement:** Comprehensive test coverage ensures reliability while maintaining fast local development workflows through intelligent test organization and mocking strategies.
 
-**Learn More:** See [TESTING_SUMMARY.md](TESTING_SUMMARY.md)
+**Learn More:** See [testing-summary.md](../testing/testing-summary.md)
 
 ---
 
@@ -114,7 +114,7 @@ Generic export functions support multiple formats:
 
 **Key Achievement:** Project established as vendor-neutral with emphasis on PostgreSQL ecosystem while enabling users to choose their preferred deployment model.
 
-**Learn More:** See [VERIFICATION_REPORT.md](VERIFICATION_REPORT.md)
+**Learn More:** See [verification-report.md](../reports/verification-report.md)
 
 ---
 
@@ -191,7 +191,7 @@ Foundation notebooks (foundation/00-02) now include:
 
 **Key Achievement:** Transformed project into comprehensive RAG learning resource with 4,636 lines of high-quality educational documentation.
 
-**Learn More:** See [CONCEPTS.md](CONCEPTS.md), [ADVANCED_CONCEPTS.md](ADVANCED_CONCEPTS.md), [EVALUATION_CONCEPTS.md](EVALUATION_CONCEPTS.md)
+**Learn More:** See [concepts.md](../learning-paths/concepts.md), [advanced-concepts.md](../learning-paths/advanced-concepts.md), [evaluation-concepts.md](../learning-paths/evaluation-concepts.md)
 
 ---
 
@@ -274,7 +274,7 @@ Systematic validation of all 15 notebooks and resolution of all critical executi
 
 **Key Achievement:** All 15 notebooks now fully functional and ready for production use.
 
-**Learn More:** See [NOTEBOOK_VALIDATION_REPORT.md](NOTEBOOK_VALIDATION_REPORT.md), [NOTEBOOK_FIXES_REPORT.md](NOTEBOOK_FIXES_REPORT.md)
+**Learn More:** See [notebook-validation-report.md](../reports/notebook-validation-report.md), [notebook-fixes-report.md](../reports/notebook-fixes-report.md)
 
 ---
 
@@ -505,9 +505,9 @@ jupyter notebook
 ```
 
 ### 5. Learn RAG Concepts
-- Read [CONCEPTS.md](CONCEPTS.md) for fundamentals
-- Explore [ADVANCED_CONCEPTS.md](ADVANCED_CONCEPTS.md) for advanced techniques
-- Check [LEARNING_ROADMAP.md](LEARNING_ROADMAP.md) for structured learning path
+- Read [concepts.md](../learning-paths/concepts.md) for fundamentals
+- Explore [advanced-concepts.md](../learning-paths/advanced-concepts.md) for advanced techniques
+- Check [learning-roadmap.md](../learning-paths/learning-roadmap.md) for structured learning path
 
 ### 6. Run Tests
 ```bash
@@ -523,22 +523,22 @@ pytest tests/ -v
 ## Support & Resources
 
 ### Documentation
-- [README.md](README.md) - Project overview
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Essential commands
-- [LEARNING_ROADMAP.md](LEARNING_ROADMAP.md) - Structured learning guide
-- [POSTGRESQL_SETUP.md](POSTGRESQL_SETUP.md) - Database setup
-- [TESTING_GUIDE.md](TESTING_GUIDE.md) - Testing strategies
+- [readme.md](../../README.md) - Project overview
+- [quick-reference.md](../../user-guides/quick-reference.md) - Essential commands
+- [learning-roadmap.md](../../learning-paths/learning-roadmap.md) - Structured learning guide
+- [postgres-setup.md](../../user-guides/postgres-setup.md) - Database setup
+- [testing-guide.md](../../development/testing/testing-guide.md) - Testing strategies
 
 ### Concept Guides
-- [CONCEPTS.md](CONCEPTS.md) - RAG fundamentals (1,993 lines)
-- [ADVANCED_CONCEPTS.md](ADVANCED_CONCEPTS.md) - Advanced techniques (1,432 lines)
-- [EVALUATION_CONCEPTS.md](EVALUATION_CONCEPTS.md) - Evaluation methodology (1,211 lines)
+- [concepts.md](../../learning-paths/concepts.md) - RAG fundamentals (1,993 lines)
+- [advanced-concepts.md](../../learning-paths/advanced-concepts.md) - Advanced techniques (1,432 lines)
+- [evaluation-concepts.md](../../learning-paths/evaluation-concepts.md) - Evaluation methodology (1,211 lines)
 
 ### Technical Reports
-- [TESTING_SUMMARY.md](TESTING_SUMMARY.md) - Test infrastructure details
-- [NOTEBOOK_VALIDATION_REPORT.md](NOTEBOOK_VALIDATION_REPORT.md) - Execution results
-- [NOTEBOOK_FIXES_REPORT.md](NOTEBOOK_FIXES_REPORT.md) - Bug fixes applied
-- [VERIFICATION_REPORT.md](VERIFICATION_REPORT.md) - Cloud reference cleanup
+- [testing-summary.md](../testing/testing-summary.md) - Test infrastructure details
+- [notebook-validation-report.md](../reports/notebook-validation-report.md) - Execution results
+- [notebook-fixes-report.md](../reports/notebook-fixes-report.md) - Bug fixes applied
+- [verification-report.md](../reports/verification-report.md) - Cloud reference cleanup
 
 ### External Resources
 - [Ollama](https://ollama.com/) - Local LLM inference
@@ -581,7 +581,7 @@ MIT License - See LICENSE file for details
 
 This is an educational project. Contributions welcome! Please:
 
-1. Review [TESTING_GUIDE.md](TESTING_GUIDE.md) for testing standards
+1. Review [testing-guide.md](../testing/testing-guide.md) for testing standards
 2. Add tests for new features (target 80%+ coverage)
 3. Update documentation in appropriate concept guide
 4. Run test suite before submitting: `pytest tests/ -v`
@@ -591,11 +591,11 @@ This is an educational project. Contributions welcome! Please:
 ## Contact & Questions
 
 For questions about RAG concepts, see the comprehensive guides:
-- Fundamentals: [CONCEPTS.md](CONCEPTS.md)
-- Advanced techniques: [ADVANCED_CONCEPTS.md](ADVANCED_CONCEPTS.md)
-- Evaluation: [EVALUATION_CONCEPTS.md](EVALUATION_CONCEPTS.md)
+- Fundamentals: [concepts.md](../../learning-paths/concepts.md)
+- Advanced techniques: [advanced-concepts.md](../../learning-paths/advanced-concepts.md)
+- Evaluation: [evaluation-concepts.md](../../learning-paths/evaluation-concepts.md)
 
-For technical issues, see [TESTING_GUIDE.md](TESTING_GUIDE.md) and run the test suite.
+For technical issues, see [testing-guide.md](../testing/testing-guide.md) and run the test suite.
 
 ---
 

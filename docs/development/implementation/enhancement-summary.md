@@ -173,15 +173,15 @@ Using PostgreSQL locally from day one simplifies scaling to production. The same
 
 ## Support & Documentation
 
-- **Setup Help**: See POSTGRESQL_SETUP.md
-- **Quick Decisions**: See QUICK_REFERENCE.md  
-- **Code Examples**: See embedding-analysis-template.ipynb
-- **Troubleshooting**: POSTGRESQL_SETUP.md includes common issues
+- **Setup Help**: See [postgres-setup.md](../../user-guides/postgres-setup.md)
+- **Quick Decisions**: See [quick-reference.md](../../user-guides/quick-reference.md)
+- **Code Examples**: See [embedding-analysis-template.ipynb](../../../embedding-analysis-template.ipynb)
+- **Troubleshooting**: [postgres-setup.md](../../user-guides/postgres-setup.md) includes common issues
 
 ## Questions?
 
 Review the documentation files in this order:
-1. Start: README.md (overview)
-2. Setup: POSTGRESQL_SETUP.md (detailed instructions)
-3. Reference: QUICK_REFERENCE.md (quick lookups)
-4. Code: embedding-analysis-template.ipynb (working examples)
+1. Start: [readme.md](../../../README.md) (overview)
+2. Setup: [postgres-setup.md](../../user-guides/postgres-setup.md) (detailed instructions)
+3. Reference: [quick-reference.md](../../user-guides/quick-reference.md) (quick lookups)
+4. Code: [embedding-analysis-template.ipynb](../../../embedding-analysis-template.ipynb) (working examples)

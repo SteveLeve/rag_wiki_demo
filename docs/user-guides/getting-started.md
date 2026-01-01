@@ -8,7 +8,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 
 **Time: ~1 hour | Setup: 0 minutes**
 
-- [ ] Read [README.md](./README.md) - Project Overview (5 min)
+- [ ] Read [readme.md](../../README.md) - Project Overview (5 min)
 - [ ] Ensure Ollama is running:
   ```bash
   ollama list
@@ -35,7 +35,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Ask test questions to verify it works
 - [ ] You're done! ✅
 
-**Next Steps**: Review [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) to understand storage backends, then move to Path B or C if interested.
+**Next Steps**: Review [quick-reference.md](./quick-reference.md) to understand storage backends, then move to Path B or C if interested.
 
 ---
 
@@ -97,7 +97,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Verify success message: "✓ Vector database ready with X embeddings in PostgreSQL!"
 
 ### Create Analysis Notebook
-- [ ] Read [embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb)
+- [ ] Read [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb)
 - [ ] Create a copy:
   ```bash
   cp embedding-analysis-template.ipynb my-analysis.ipynb
@@ -108,7 +108,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 
 **Next Steps**: 
 - Try modifying the analysis notebook to run your own experiments
-- See [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for advanced options
+- See [quick-reference.md](./quick-reference.md) for advanced options
 
 ---
 
@@ -172,7 +172,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 **Next Steps**: 
 - Try adding more models
 - Implement automated evaluation metrics
-- See [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) for advanced database topics
+- See [postgres-setup.md](./postgres-setup.md) for advanced database topics
 
 ---
 
@@ -236,7 +236,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
   TARGET_SIZE_MB = 5
   ```
 
-**Can't find your issue?** See [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) → "Troubleshooting" section
+**Can't find your issue?** See [postgres-setup.md](./postgres-setup.md) → "Troubleshooting" section
 
 ---
 
@@ -245,21 +245,21 @@ Choose your path and follow the checklist. Check off items as you complete them.
 After completing your chosen path:
 
 1. **Understand RAG Concepts** (30 min)
-   - Read: [README.md](./README.md) → "🔬 Experimentation Guide"
+   - Read: [readme.md](../../README.md) → "🔬 Experimentation Guide"
    - Understand: Retrieval vs Generation trade-offs
 
 2. **Explore Embeddings** (20 min)
-   - Read: [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+   - Read: [quick-reference.md](./quick-reference.md)
    - Compare: Different embedding models
    - Experiment: Different `top_n` values in retrieval
 
 3. **Plan Your Experiments** (1 hour)
-   - Use: [embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb) as template
+   - Use: [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) as template
    - Try: Custom evaluation metrics
    - Analyze: Retrieval quality by query type
 
 4. **Prepare for Production** (Optional)
-   - Read: [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) → "Advanced" section
+   - Read: [postgres-setup.md](./postgres-setup.md) → "Advanced" section
    - Explore: Other vector databases (Neon, Pinecone, Weaviate)
    - Plan: Migration strategy for your use case
 
@@ -268,15 +268,15 @@ After completing your chosen path:
 ## 📖 Documentation Map
 
 | I want to... | Read this |
-|-------------|-----------|
-| Understand the project | [README.md](./README.md) |
-| Get started quickly | This checklist (INDEX.md) |
-| Set up PostgreSQL | [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) |
-| Choose a storage backend | [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) |
-| See what's new | [ENHANCEMENT_SUMMARY.md](./ENHANCEMENT_SUMMARY.md) |
-| Copy code examples | [embedding-analysis-template.ipynb](./embedding-analysis-template.ipynb) |
-| Learn RAG concepts | [README.md](./README.md) → "Experimentation Guide" |
-| Troubleshoot issues | [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) → "Troubleshooting" |
+|-------------|----------|
+| Understand the project | [readme.md](../../README.md) |
+| Get started quickly | This checklist (index.md) |
+| Set up PostgreSQL | [postgres-setup.md](./postgres-setup.md) |
+| Choose a storage backend | [quick-reference.md](./quick-reference.md) |
+| See what's new | [enhancement-summary.md](../implementation/enhancement-summary.md) |
+| Copy code examples | [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) |
+| Learn RAG concepts | [readme.md](../../README.md) → "Experimentation Guide" |
+| Troubleshoot issues | [postgres-setup.md](./postgres-setup.md) → "Troubleshooting" |
 
 ---
 

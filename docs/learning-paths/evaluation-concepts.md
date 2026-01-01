@@ -2,7 +2,7 @@
 
 A comprehensive guide to measuring and improving RAG system performance through systematic evaluation. This document explains retrieval and generation metrics, evaluation workflows, and how to iterate toward production-quality RAG systems.
 
-**Prerequisites**: Read [CONCEPTS.md](./CONCEPTS.md) (foundational RAG) and [ADVANCED_CONCEPTS.md](./ADVANCED_CONCEPTS.md) (advanced techniques) before diving into this document.
+**Prerequisites**: Read [concepts.md](./concepts.md) (foundational RAG) and [advanced-concepts.md](./advanced-concepts.md) (advanced techniques) before diving into this document.
 
 ---
 

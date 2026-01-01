@@ -516,11 +516,11 @@ pytest tests/ -m "unit" -v
 
 ## How to View This Information
 
-- **Full Release Details:** See [RELEASE_NOTES.md](RELEASE_NOTES.md)
-- **Changelog Format:** See [CHANGELOG.md](CHANGELOG.md)
+- **Full Release Details:** See [release-notes.md](./release-notes.md)
+- **Changelog Format:** See [changelog.md](./changelog.md)
 - **Version History:** This file (VERSION_HISTORY.md)
-- **Test Details:** See [TESTING_SUMMARY.md](TESTING_SUMMARY.md)
-- **Notebook Status:** See [NOTEBOOK_VALIDATION_REPORT.md](NOTEBOOK_VALIDATION_REPORT.md)
+- **Test Details:** See [testing-summary.md](../testing/testing-summary.md)
+- **Notebook Status:** See [notebook-validation-report.md](../reports/notebook-validation-report.md)
 
 ---
 

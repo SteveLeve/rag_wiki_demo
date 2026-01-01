@@ -212,9 +212,9 @@ Examples:
    ```
 
 2. **Review new documentation:**
-   - [CONCEPTS.md](CONCEPTS.md) - Foundational understanding
-   - [ADVANCED_CONCEPTS.md](ADVANCED_CONCEPTS.md) - Advanced techniques
-   - [EVALUATION_CONCEPTS.md](EVALUATION_CONCEPTS.md) - Evaluation methodology
+   - [concepts.md](../../learning-paths/concepts.md) - Foundational understanding
+   - [advanced-concepts.md](../../learning-paths/advanced-concepts.md) - Advanced techniques
+   - [evaluation-concepts.md](../../learning-paths/evaluation-concepts.md) - Evaluation methodology
 
 3. **Run updated tests:**
    ```bash
@@ -285,10 +285,10 @@ When contributing changes, please:
 ---
 
 For more details about specific releases, see:
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Detailed v2.0.0 release information
-- [TESTING_SUMMARY.md](TESTING_SUMMARY.md) - Testing infrastructure details
-- [NOTEBOOK_VALIDATION_REPORT.md](NOTEBOOK_VALIDATION_REPORT.md) - Validation results
-- [VERIFICATION_REPORT.md](VERIFICATION_REPORT.md) - Cloud reference cleanup
+- [release-notes.md](./release-notes.md) - Detailed v2.0.0 release information
+- [testing-summary.md](../testing/testing-summary.md) - Testing infrastructure details
+- [notebook-validation-report.md](../reports/notebook-validation-report.md) - Validation results
+- [verification-report.md](../reports/verification-report.md) - Cloud reference cleanup
 
 ---
 

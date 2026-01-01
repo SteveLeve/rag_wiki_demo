@@ -18,10 +18,10 @@ Choose based on your goals and available time:
 ### Path A: Quick Learning (1-2 hours)
 **Goal:** Understand RAG fundamentals without infrastructure
 
-1. Read: [README.md](./README.md) - Architecture section
+1. Read: [readme.md](../../README.md) - Architecture section
 2. Run: `foundation/01-basic-rag-in-memory.ipynb` — In-memory RAG with Simple Wikipedia
 3. Test: Run sample queries to see basic RAG in action
-4. Next: Explore [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for concepts
+4. Next: Explore [quick-reference.md](../user-guides/quick-reference.md) for concepts
 
 **Time estimate:** 1-2 hours  
 **Hardware:** 8GB RAM sufficient
@@ -297,7 +297,7 @@ experiment_id = start_experiment(..., config=config)
 
 For detailed information:
 - Technique-specific guides → See notebook docstrings
-- Evaluation methodology → See [EVALUATION_GUIDE.md](./EVALUATION_GUIDE.md)
-- Configuration reference → See [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+- Evaluation methodology → See [evaluation-guide.md](../development/testing/evaluation-guide.md)
+- Configuration reference → See [quick-reference.md](../user-guides/quick-reference.md)
 
 Happy learning! 🚀

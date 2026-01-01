@@ -2,6 +2,14 @@
 
 A practical Retrieval-Augmented Generation (RAG) implementation using Simple Wikipedia articles, designed for experimentation with different embedding models, RAG evaluation techniques, and migration to production vector databases.
 
+## 🎯 Quick Links
+
+- **New here?** → [Getting Started Guide](./docs/user-guides/getting-started.md)
+- **Learning paths** → [Learning Roadmap](./docs/learning-paths/learning-roadmap.md)
+- **Setting up PostgreSQL?** → [Postgres Setup](./docs/user-guides/postgres-setup.md)
+- **Exploring techniques?** → Start with [foundation/README.md](./foundation/README.md)
+- **Full documentation index** → [docs/INDEX.md](./docs/INDEX.md)
+
 ## 🎯 Project Goals
 
 This project serves as a learning platform and proof-of-concept for:

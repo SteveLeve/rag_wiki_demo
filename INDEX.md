@@ -1,12 +1,15 @@
 # Project Documentation & Learning Path Index
 
+> **For a complete documentation directory**, see [docs/INDEX.md](./docs/INDEX.md)
+
 ## 🎯 Quick Navigation
 
 ### Choose Your Learning Path
 - **New to RAG?** → Start with [foundation/README.md](./foundation/README.md) for guided learning paths
 - **Want to understand the system?** → Read [README.md](./README.md) first (10 min)
-- **Need PostgreSQL setup?** → See [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)
-- **Looking for quick reference?** → Check [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+- **Need PostgreSQL setup?** → See [docs/user-guides/postgres-setup.md](./docs/user-guides/postgres-setup.md)
+- **Looking for quick reference?** → Check [docs/user-guides/quick-reference.md](./docs/user-guides/quick-reference.md)
+- **Full docs directory** → Browse [docs/INDEX.md](./docs/INDEX.md)
 
 ---
 

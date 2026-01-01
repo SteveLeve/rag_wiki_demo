@@ -1,6 +1,6 @@
 # Wikipedia RAG Demo Project
 
-A practical Retrieval-Augmented Generation (RAG) implementation using Simple Wikipedia articles, designed for experimentation with different embedding models, RAG evaluation techniques, and migration to production vector databases.
+A practical Retrieval-Augmented Generation (RAG) implementation using Simple Wikipedia articles, designed for experimentation with different embedding models and RAG evaluation techniques.
 
 ## 🎯 Quick Links
 

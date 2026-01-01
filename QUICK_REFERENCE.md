@@ -171,23 +171,20 @@ results = db.similarity_search(query_embedding, top_n=3)
 
 ---
 
-## Production Migration Path
+## Migration Path
 
 ```
-Local Development        →  Production
+Development Progression
 ┌──────────────────────┐     ┌──────────────────────┐
-│ In-Memory Vector DB  │     │ PostgreSQL/pgvector  │
-│ (STORAGE_BACKEND='   │     │ + Application Server │
-│  memory')            │     │ (Heroku/Railway)     │
+│  In-Memory Backend   │────→│  Local PostgreSQL    │
+│  (Quick Testing)     │     │  + pgvector          │
 └──────────────────────┘     └──────────────────────┘
-             │                          │
-             └──────────────┬───────────┘
-                            │
-                            ▼
-                 ┌──────────────────────┐
-                 │  Neon (PostgreSQL)   │
-                 │  + Vercel (Frontend) │
-                 └──────────────────────┘
+                                     │
+                                     ▼
+                             ┌──────────────────────┐
+                             │  Hosted PostgreSQL   │
+                             │  (Neon/Supabase)     │
+                             └──────────────────────┘
 ```
 
-Use PostgreSQL locally from the start to reduce migration friction.
+**Recommendation**: Use PostgreSQL locally from the start to reduce migration friction. When ready to deploy, move to a hosted PostgreSQL provider (Neon or Supabase) with minimal code changes.

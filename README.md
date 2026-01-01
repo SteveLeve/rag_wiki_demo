@@ -9,7 +9,7 @@ This project serves as a learning platform and proof-of-concept for:
 1. **RAG System Fundamentals**: Understand core RAG concepts through hands-on implementation
 2. **Embedding Model Comparison**: Evaluate different embedding models on the same dataset
 3. **RAG Evaluation Techniques**: Experiment with retrieval quality metrics and generation assessment
-4. **Platform Migration Path**: Develop locally, deploy to production (Neon/Vercel or Cloudflare D1/Vectorize)
+4. **Production-Ready Architecture**: Develop locally with PostgreSQL, optionally migrate to hosted solutions (Neon, Supabase)
 5. **Free Tier Optimization**: Maintain dataset sizes (10-50MB) that work within free tier constraints
 
 ## 📋 Features
@@ -48,8 +48,8 @@ This project serves as a learning platform and proof-of-concept for:
          ┌─────────────────────────┐
          │   Vector Database       │
          │  • In-memory (dev)      │
-         │  • Neon (production)    │
-         │  • Vectorize (prod)     │
+         │  • PostgreSQL + pgvector│
+         │  • Neon/Supabase (opt.) │
          └──────────┬──────────────┘
                     │
                     ▼
@@ -177,24 +177,34 @@ Example models to try:
    - Track which retrieved chunks are actually used
    - Measure answer coverage vs. retrieved content
 
-## 🌐 Production Migration
+## 🌐 PostgreSQL Setup & Deployment Options
 
-### Option 1: Neon (PostgreSQL with pgvector) + Vercel
+### Option 1: Local PostgreSQL with Docker (Recommended for Learning)
 
-**Why Choose Neon:**
-- SQL-based querying with vector similarity
-- ACID compliance for data integrity
-- Easy integration with Vercel serverless functions
-- Free tier: 0.5GB storage, generous compute
+**Why Start Local:**
+- Complete control over data and infrastructure
+- No cloud service dependencies
+- Easy to understand and debug
+- Ideal for learning and experimentation
 
 **Setup:**
 
-1. **Create Neon Database**:
+1. **Start PostgreSQL with Docker**:
+   ```bash
+   docker run --name postgres_rag \
+     -e POSTGRES_PASSWORD=yourpassword \
+     -e POSTGRES_DB=wikipedia_rag \
+     -p 5432:5432 \
+     -d postgres:16
+   ```
+
+2. **Enable pgvector Extension**:
    ```sql
-   -- Enable pgvector extension
-   CREATE EXTENSION vector;
-   
-   -- Create table
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
+
+3. **Create Table**:
+   ```sql
    CREATE TABLE wikipedia_chunks (
      id SERIAL PRIMARY KEY,
      chunk_id TEXT UNIQUE,
@@ -202,117 +212,143 @@ Example models to try:
      text TEXT,
      embedding vector(768)
    );
-   
-   -- Create index for similarity search
-   CREATE INDEX ON wikipedia_chunks 
+
+   -- Create index for efficient similarity search
+   CREATE INDEX ON wikipedia_chunks
    USING ivfflat (embedding vector_cosine_ops)
    WITH (lists = 100);
    ```
 
-2. **Export and Import**:
+4. **Connect from Notebook**:
    ```python
-   # In notebook
-   export_for_vectorize('wikipedia_export.json')
-   ```
-   
-   ```javascript
-   // In Vercel function
-   import { neon } from '@neondatabase/serverless';
-   
-   const sql = neon(process.env.DATABASE_URL);
-   
-   // Insert chunks
-   await sql`
-     INSERT INTO wikipedia_chunks (chunk_id, title, text, embedding)
-     VALUES (${id}, ${title}, ${text}, ${embedding})
-   `;
-   ```
+   import psycopg2
+   from psycopg2.extras import execute_values
 
-3. **Query in Production**:
-   ```javascript
-   // Similarity search
-   const results = await sql`
-     SELECT chunk_id, title, text,
-            1 - (embedding <=> ${queryEmbedding}::vector) as similarity
-     FROM wikipedia_chunks
-     ORDER BY embedding <=> ${queryEmbedding}::vector
-     LIMIT 5
-   `;
+   conn = psycopg2.connect(
+       host="localhost",
+       port=5432,
+       database="wikipedia_rag",
+       user="postgres",
+       password="yourpassword"
+   )
+
+   # Insert embeddings
+   with conn.cursor() as cur:
+       execute_values(
+           cur,
+           "INSERT INTO wikipedia_chunks (chunk_id, title, text, embedding) VALUES %s",
+           [(chunk_id, title, text, embedding) for chunk_id, title, text, embedding in data]
+       )
+   conn.commit()
    ```
 
-### Option 2: Cloudflare D1 + Vectorize
+### Option 2: Neon PostgreSQL (Hosted, Free Tier)
 
-**Why Choose Cloudflare:**
-- Global edge deployment
-- Integrated with Workers platform
-- Purpose-built vector search (Vectorize)
-- Free tier: 10M vector queries/month
+**Why Choose Neon:**
+- SQL-based querying with vector similarity (pgvector)
+- ACID compliance for data integrity
+- Free tier: 0.5GB storage, generous compute
+- Easy migration path from local
 
 **Setup:**
 
-1. **Create Vectorize Index**:
-   ```bash
-   wrangler vectorize create wikipedia-index \
-     --dimensions=768 \
-     --metric=cosine
-   ```
+1. **Create Neon Account**: [neon.tech](https://neon.tech/)
 
-2. **Configure Worker**:
-   ```toml
-   # wrangler.toml
-   [[vectorize]]
-   binding = "VECTORIZE"
-   index_name = "wikipedia-index"
-   
-   [[d1_databases]]
-   binding = "DB"
-   database_name = "wikipedia-metadata"
-   ```
+2. **Create Database**:
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
 
-3. **Insert Data**:
-   ```javascript
-   // Upload vectors to Vectorize
-   await env.VECTORIZE.upsert([
-     {
-       id: 'chunk_1',
-       values: embedding,
-       metadata: { title: 'Article Title' }
-     }
-   ]);
-   
-   // Store full text in D1
-   await env.DB.prepare(
-     'INSERT INTO chunks (id, title, text) VALUES (?, ?, ?)'
-   ).bind('chunk_1', 'Article Title', fullText).run();
-   ```
-
-4. **Query in Worker**:
-   ```javascript
-   // Vector search
-   const matches = await env.VECTORIZE.query(queryEmbedding, {
-     topK: 5,
-     returnMetadata: true
-   });
-   
-   // Fetch full text from D1
-   const chunks = await Promise.all(
-     matches.map(m => 
-       env.DB.prepare('SELECT * FROM chunks WHERE id = ?')
-         .bind(m.id).first()
-     )
+   CREATE TABLE wikipedia_chunks (
+     id SERIAL PRIMARY KEY,
+     chunk_id TEXT UNIQUE,
+     title TEXT,
+     text TEXT,
+     embedding vector(768)
    );
+
+   CREATE INDEX ON wikipedia_chunks
+   USING ivfflat (embedding vector_cosine_ops)
+   WITH (lists = 100);
    ```
 
-### Migration Comparison
+3. **Connect from Notebook**:
+   ```python
+   import psycopg2
 
-| Feature               | Neon + Vercel          | Cloudflare D1 + Vectorize |
-|-----------------------|------------------------|---------------------------|
-| **Setup Complexity**  | Medium                 | Medium                    |
-| **Query Latency**     | 50-200ms (regional)    | 10-50ms (edge)           |
-| **Free Tier Storage** | 0.5GB                  | 5GB (D1) + 5M vectors    |
-| **Scaling Cost**      | Pay-as-you-go          | Pay-as-you-go            |
-| **SQL Support**       | Full PostgreSQL        | SQLite subset            |
-| **Best For**          | Complex queries, ACID  | Global distribution      |
+   conn = psycopg2.connect(
+       host="<neon-host>",
+       port=5432,
+       database="wikipedia_rag",
+       user="<neon-user>",
+       password="<neon-password>"
+   )
+   ```
+
+4. **Query Data**:
+   ```sql
+   SELECT chunk_id, title, text,
+          1 - (embedding <=> ${queryEmbedding}::vector) as similarity
+   FROM wikipedia_chunks
+   ORDER BY embedding <=> ${queryEmbedding}::vector
+   LIMIT 5;
+   ```
+
+### Option 3: Supabase PostgreSQL (Alternative Hosted)
+
+**Why Choose Supabase:**
+- Built on PostgreSQL with pgvector support
+- Includes authentication and API layer
+- Free tier: 500MB storage
+- Easy to upgrade when needed
+
+**Setup:**
+
+1. **Create Supabase Project**: [supabase.com](https://supabase.com/)
+
+2. **Create Table** (via SQL Editor):
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
+
+   CREATE TABLE wikipedia_chunks (
+     id BIGSERIAL PRIMARY KEY,
+     chunk_id TEXT UNIQUE,
+     title TEXT,
+     text TEXT,
+     embedding vector(768)
+   );
+
+   CREATE INDEX ON wikipedia_chunks
+   USING ivfflat (embedding vector_cosine_ops)
+   WITH (lists = 100);
+   ```
+
+3. **Connect from Notebook**:
+   ```python
+   from supabase import create_client, Client
+
+   url = "<your-supabase-url>"
+   key = "<your-supabase-key>"
+   supabase: Client = create_client(url, key)
+   ```
+
+### Option 4: Self-Hosted Alternatives
+
+Other PostgreSQL hosting providers with pgvector support:
+- **Railway**: Simple deployment, pay-as-you-go
+- **Render**: Generous free tier for PostgreSQL
+- **TimescaleDB Cloud**: Purpose-built for time-series + vectors
+
+All follow the same SQL schema and connection patterns as Neon and Supabase.
+
+### PostgreSQL Options Comparison
+
+| Feature               | Local Docker | Neon | Supabase | Railway |
+|-----------------------|--------------|------|----------|---------|
+| **Setup Time**        | 5 min        | 5 min| 5 min    | 10 min  |
+| **Cost**              | Free         | Free | Free     | Free    |
+| **Storage (free)**    | Unlimited    | 0.5GB| 500MB    | 10GB    |
+| **Best For**          | Learning     | Demo | Production| Scale   |
+| **pgvector Support**  | Yes          | Yes  | Yes      | Yes     |
 
 ## 📓 Analysis & Experimentation Notebooks
 
@@ -434,7 +470,7 @@ ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
 ### Medium Term
 - [ ] Add reranking layer
 - [ ] Implement hybrid search (vector + keyword)
-- [ ] Deploy to Neon or Cloudflare
+- [ ] Deploy to Neon, Supabase, or self-hosted PostgreSQL
 - [ ] Build simple web interface
 
 ### Long Term
@@ -452,7 +488,7 @@ ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
 
 ### Vector Databases
 - [Neon Documentation](https://neon.tech/docs/introduction)
-- [Cloudflare Vectorize](https://developers.cloudflare.com/vectorize/)
+- [Supabase PostgreSQL](https://supabase.com/docs/guides/database/overview)
 - [pgvector Guide](https://github.com/pgvector/pgvector)
 
 ### Embedding Models
@@ -494,8 +530,11 @@ A: 8GB RAM recommended for 10-20MB datasets. Larger datasets may need 16GB+.
 **Q: How accurate are the answers?**  
 A: Accuracy depends on whether relevant articles are in your dataset sample. The 1B parameter LLM is limited but surprisingly capable for factual questions.
 
-**Q: Should I use Neon or Cloudflare for production?**  
-A: Choose Neon if you need complex SQL queries and strong consistency. Choose Cloudflare if you want global edge performance and simpler scaling.
+**Q: Can I use this project without cloud services?**
+A: Yes! Start with local PostgreSQL using Docker (see Option 1 in the PostgreSQL Setup section). It's perfect for learning and requires no cloud accounts or API keys.
+
+**Q: Which PostgreSQL option should I choose for production?**
+A: Start with local PostgreSQL for development/learning. For production, choose based on your needs: Neon for simplicity, Supabase for additional features (auth, APIs), or self-hosted (Railway/Render) for cost control.
 
 ---
 

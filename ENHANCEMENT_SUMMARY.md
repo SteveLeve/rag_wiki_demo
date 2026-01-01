@@ -161,14 +161,15 @@ pip install psycopg2-binary
 ## Migration Path
 
 ```
-Local Dev             Staging              Production
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│ PostgreSQL   │────→│ PostgreSQL    │────→│ Neon/Vercel  │
-│ + Docker     │     │ + Railway     │     │ or Vectorize │
-└──────────────┘     └──────────────┘     └──────────────┘
+Local Development        →    Hosted Database
+┌──────────────────────┐     ┌──────────────────────┐
+│  Local PostgreSQL    │────→│  Hosted PostgreSQL   │
+│  + pgvector          │     │  (Neon/Supabase)     │
+│  + Docker            │     │                      │
+└──────────────────────┘     └──────────────────────┘
 ```
 
-Using PostgreSQL locally from day one simplifies scaling to production.
+Using PostgreSQL locally from day one simplifies scaling to production. The same code works with both local and hosted PostgreSQL providers.
 
 ## Support & Documentation
 

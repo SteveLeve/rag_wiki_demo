@@ -101,6 +101,69 @@ docker run -d --name rag-wiki-pgvector \
 Data here is regenerable — the corpus streams from `wikimedia/wikipedia`. When schema or aliases
 change, `python scripts/reset_db.py --yes` is the expected answer, not a migration.
 
+## The teaching-copy register
+
+Which helper is taught where. A helper is hand-written inline **exactly once**,
+in the notebook whose learning objective names it; everywhere else it is imported.
+
+| Helper | Taught in | Library home |
+|---|---|---|
+| `chunk_text` | `foundation/01` | `ragkit.chunking` |
+| `cosine_similarity` | `foundation/01` | `ragkit.retrieval` |
+| `PostgreSQLVectorDB` | `foundation/02` | `ragkit.store.VectorStore` |
+| `precision_at_k`, `recall_at_k`, `mean_reciprocal_rank`, `ndcg_at_k` | `evaluation-lab/02` | `ragkit.metrics` |
+| `bm25_search_postgresql`, `reciprocal_rank_fusion` | `advanced-techniques/07` | `ragkit.retrieval` |
+| registry / experiment / DDL helpers | nowhere — Tier 3 | `ragkit.registry`, `ragkit.experiment`, `ragkit.db` |
+
+## Adjudications
+
+Decisions taken while consolidating duplicated implementations, recorded so they
+are not silently re-litigated.
+
+**NDCG's ideal DCG is computed over the full relevant set, not the retrieved set.**
+Six notebook copies of `ndcg_at_k` existed. An AST comparison showed only three
+were semantically distinct, differing solely in `math.log2` versus `np.log2` — but
+all six computed the ideal as `sorted(retrieved_relevance, reverse=True)`, the best
+ordering *of what was retrieved*. That makes NDCG blind to recall: retrieving 1
+relevant chunk out of 10 and ranking it first scored a perfect 1.000, because one
+hit at rank 1 is the only achievable ordering of one hit. `ragkit.metrics`
+normalises against `min(len(relevant), k)` instead, scoring that case 0.339.
+The majority implementation was the wrong one. **Stored NDCG values from before
+September 2026 are not comparable to values after it.**
+
+**`precision_at_k` divides by `k`, not by the number of results returned.**
+Returning fewer than `k` results is itself a failure to fill the slots, and the
+metric should reflect it rather than grading on a curve.
+
+**`compute_config_hash` truncates to 12 hex characters.** 48 bits is ample for
+deduplicating experiment configs and short enough to read in a dashboard column.
+The value is stored in `experiments.config_hash`, so widening it would invalidate
+every existing row.
+
+**`model_name` *is* the Ollama tag.** An earlier draft added a separate
+`ollama_tag` column; it was removed as a second place for one fact to drift.
+`table_name` is a generated column (`'embeddings_' || model_alias`), so the alias
+and its table cannot disagree.
+
+**`embedding_registry` keeps its v1 column ordinals, with v2 columns appended.**
+Notebooks and tests read rows via `SELECT *` with positional indexing, so
+inserting a column mid-table silently shifts every one of those reads.
+
+## Known sharp edges
+
+- **pgvector values come back as text.** psycopg2 has no adapter for the type, so
+  `SELECT embedding` returns `'[0.1,0.2,...]'` and `len()` counts characters — a
+  768-dimensional vector measures about 9,400. Always ask the database:
+  `SELECT vector_dims(embedding)`.
+- **Never pass a Python list of numpy floats to a vector column.** psycopg2 renders
+  a list as a Postgres `ARRAY[...]`, and under numpy 2 each element reprs as
+  `np.float64(0.0)` — producing invalid SQL. Pass `str([...])` of plain floats.
+- **A name assigned anywhere in a function is local for that whole function.**
+  Notebooks bind `db`, `config` and `conn` freely, so importing a *module* under
+  one of those names and using it earlier in the same scope is an
+  `UnboundLocalError`. Import the function directly instead.
+- **`input()` blocks papermill forever.** `scripts/nb_lint.py` bans it.
+
 ## Things that are deliberately not here
 
 - **No `docs/development/`.** Point-in-time phase reports and release notes were deleted in September

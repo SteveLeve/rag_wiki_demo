@@ -49,6 +49,41 @@ def cell_source(cell: dict) -> str:
     return "".join(src)
 
 
+def undefined_constants(source: str) -> list[str]:
+    """SCREAMING_CASE names a notebook reads but never assigns.
+
+    These are configuration knobs, and four notebooks shipped referencing ones
+    that existed nowhere -- RRF_K, FILTER_STATUS, LIMIT_EXPERIMENTS,
+    PRIMARY_METRIC. Each was a NameError on a clean run, invisible to anyone who
+    had already defined the name in their kernel from an earlier notebook.
+    """
+    import builtins
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+
+    assigned: set[str] = set()
+    used: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            (assigned if isinstance(node.ctx, ast.Store) else used).add(node.id)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                assigned.add((alias.asname or alias.name).split(".")[0])
+        elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            assigned.add(node.name)
+            if isinstance(node, ast.FunctionDef):
+                for arg in node.args.args + node.args.kwonlyargs:
+                    assigned.add(arg.arg)
+
+    return sorted(
+        name for name in used - assigned - set(dir(builtins))
+        if re.fullmatch(r"[A-Z][A-Z0-9_]{2,}", name)
+    )
+
+
 def check(path: Path) -> list[str]:
     problems: list[str] = []
     nb = json.loads(path.read_text(encoding="utf-8"))
@@ -60,6 +95,17 @@ def check(path: Path) -> list[str]:
     first = cells[0]
     if first.get("cell_type") != "markdown" or not cell_source(first).lstrip().startswith("# "):
         problems.append(f"{path}: first cell must be a markdown H1 title")
+
+    whole = "\n".join(
+        (cell_source(c) if cell_source(c).endswith("\n") else cell_source(c) + "\n")
+        for c in cells if c.get("cell_type") == "code"
+    )
+    if not any(l.lstrip().startswith(("%", "!")) for l in whole.splitlines()):
+        for name in undefined_constants(whole):
+            problems.append(
+                f"{path}: {name} is used but never assigned; it will raise NameError "
+                "on a clean kernel"
+            )
 
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "code":

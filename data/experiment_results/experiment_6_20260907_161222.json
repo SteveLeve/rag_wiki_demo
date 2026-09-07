@@ -1,0 +1,126 @@
+{
+  "experiment_id": 6,
+  "timestamp": "20260907_161222",
+  "metrics": {
+    "baseline_precision@5": 0.0,
+    "baseline_recall@5": 0.0,
+    "baseline_mrr": 0.0,
+    "baseline_ndcg@5": 0.0,
+    "expanded_precision@5": 0.0,
+    "expanded_recall@5": 0.0,
+    "expanded_mrr": 0.0,
+    "expanded_ndcg@5": 0.0,
+    "improvement_pct_precision@5": 0.0,
+    "improvement_pct_recall@5": 0.0,
+    "improvement_pct_mrr": 0.0,
+    "improvement_pct_ndcg@5": 0.0,
+    "num_test_queries": 20,
+    "per_query_improvements": {
+      "value": 0.0,
+      "details": {
+        "improvements": [
+          {
+            "question": "What is Warszawa?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Devil?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Vladimir Lenin.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Some?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Earth?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Beth.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Barry Rogers.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Warszawa.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Scottish.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Often.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Some.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Michael Chopra.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Good.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Types.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Promotional?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Scottish?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Presumable?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is Velocity?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "What is April?",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          },
+          {
+            "question": "Tell me about Iran.",
+            "recall_improvement_pct": 0.0,
+            "ndcg_improvement_pct": 0.0
+          }
+        ]
+      }
+    }
+  }
+}

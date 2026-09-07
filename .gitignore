@@ -132,7 +132,9 @@ dmypy.json
 # NOTE: do not ignore *.json wholesale - it swallows notebook fixtures and
 # package data. Ignore only the regenerable corpora and caches.
 wikipedia_*.json
+data/**/*.json
 data/*.json
+experiment_results/
 downloads/
 cache/
 .cache/

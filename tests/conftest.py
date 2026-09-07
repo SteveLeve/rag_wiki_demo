@@ -48,7 +48,9 @@ def postgres_test_config() -> Dict[str, Any]:
     """
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", "5432")),
+        # 5433, not 5432. Port 5432 is routinely occupied by an unrelated
+        # project's PostgreSQL, and these tests create and drop tables.
+        "port": int(os.getenv("POSTGRES_PORT", os.getenv("RAG_PG_PORT", "5433"))),
         "database": os.getenv("POSTGRES_DB", "rag_test_db"),
         "user": os.getenv("POSTGRES_USER", "postgres"),
         "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
@@ -96,77 +98,20 @@ def postgres_test_db(postgres_test_config: Dict[str, Any]) -> psycopg2.extension
 
     # Enable pgvector extension
     with conn.cursor() as cur:
-        cur.execute("CREATE EXTENSION IF NOT EXISTS pgvector")
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
     conn.commit()
 
-    # Create schema tables (matching foundation/00-setup-postgres-schema.ipynb)
+    # Create the schema from the single source of truth. This block used to be a
+    # third hand-maintained copy of the DDL (after foundation/00 and the notebooks),
+    # and it had already drifted: it declared VARCHAR columns where the notebook
+    # declares TEXT, so schema tests were validating a shape the project never built.
+    from ragkit.db import create_core_schema
+
+    create_core_schema(conn)
     with conn.cursor() as cur:
-        # Table 1: embedding_registry
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS embedding_registry (
-                id SERIAL PRIMARY KEY,
-                model_alias TEXT UNIQUE NOT NULL,
-                model_name TEXT NOT NULL,
-                dimension INT NOT NULL,
-                embedding_count INT DEFAULT 0,
-                chunk_source_dataset TEXT,
-                chunk_size_config INT,
-                metadata_json JSONB DEFAULT '{}'::jsonb,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        # Table 2: evaluation_groundtruth
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS evaluation_groundtruth (
-                id SERIAL PRIMARY KEY,
-                question TEXT NOT NULL,
-                source_type TEXT CHECK (source_type IN ('llm_generated', 'template_based', 'manual')),
-                relevant_chunk_ids INT ARRAY,
-                quality_rating TEXT CHECK (quality_rating IN ('good', 'bad', 'ambiguous', 'rejected')),
-                human_notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_by TEXT
-            )
-        """)
-
-        # Table 3: experiments
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS experiments (
-                id SERIAL PRIMARY KEY,
-                experiment_name TEXT NOT NULL,
-                notebook_path TEXT,
-                embedding_model_alias TEXT,
-                config_hash TEXT,
-                config_json JSONB,
-                techniques_applied TEXT ARRAY DEFAULT '{}'::text[],
-                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                completed_at TIMESTAMP,
-                status TEXT DEFAULT 'running' CHECK (status IN ('running', 'completed', 'failed')),
-                notes TEXT,
-                FOREIGN KEY (embedding_model_alias) REFERENCES embedding_registry(model_alias)
-            )
-        """)
-
-        # Table 4: evaluation_results
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS evaluation_results (
-                id SERIAL PRIMARY KEY,
-                experiment_id INT NOT NULL,
-                metric_name TEXT NOT NULL,
-                metric_value FLOAT NOT NULL,
-                metric_details_json JSONB DEFAULT '{}'::jsonb,
-                computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (experiment_id) REFERENCES experiments(id) ON DELETE CASCADE
-            )
-        """)
-
-        # Create indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_experiments_embedding_model ON experiments(embedding_model_alias)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_experiments_status ON experiments(status)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_experiments_started ON experiments(started_at DESC)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_results_experiment ON evaluation_results(experiment_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_results_metric ON evaluation_results(metric_name)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_groundtruth_quality ON evaluation_groundtruth(quality_rating)")
 
@@ -174,7 +119,10 @@ def postgres_test_db(postgres_test_config: Dict[str, Any]) -> psycopg2.extension
 
     yield conn
 
-    # Cleanup: truncate all tables after test
+    # Cleanup: truncate all tables after test. Roll back first -- a test that
+    # failed mid-transaction leaves the connection aborted, and without this the
+    # TRUNCATE fails too and rows leak into every subsequent test.
+    conn.rollback()
     with conn.cursor() as cur:
         cur.execute("TRUNCATE TABLE evaluation_results CASCADE")
         cur.execute("TRUNCATE TABLE experiments CASCADE")
@@ -242,22 +190,25 @@ def seed_test_data(postgres_connection: psycopg2.extensions.connection) -> Dict[
         ...     assert len(seed_test_data['embedding_ids']) == 3
     """
     with postgres_connection.cursor() as cur:
-        # Insert 3 embedding models
+        # Three dimensions on purpose, so a test that assumes 768 fails instead of
+        # passing by coincidence. Schema v2 constrains model_alias to a legal SQL
+        # identifier and generates table_name from it -- see ragkit.models.canonical_alias.
         embedding_data = [
-            ("bge_base_en_v1_5", "hf.co/CompendiumLabs/bge-base-en-v1.5-gguf", 768, 1000),
-            ("bge_small_en_v1_5", "hf.co/CompendiumLabs/bge-small-en-v1.5-gguf", 384, 500),
-            ("test_model", "test/model", 128, 100),
+            ("all_minilm_l6_v2", "all-minilm", 384, 500),
+            ("nomic_embed_text", "nomic-embed-text", 768, 1000),
+            ("mxbai_embed_large", "mxbai-embed-large", 1024, 100),
         ]
 
         embedding_ids = []
-        for alias, name, dim, count in embedding_data:
+        for alias, tag, dim, count in embedding_data:
             cur.execute(
                 """
-                INSERT INTO embedding_registry (model_alias, model_name, dimension, embedding_count, chunk_source_dataset)
+                INSERT INTO embedding_registry
+                    (model_alias, model_name, dimension, embedding_count, chunk_source_dataset)
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
                 """,
-                (alias, name, dim, count, "Wikipedia 10MB"),
+                (alias, tag, dim, count, "Wikipedia 10MB"),
             )
             embedding_ids.append(cur.fetchone()[0])
 
@@ -297,81 +248,28 @@ def seed_test_data(postgres_connection: psycopg2.extensions.connection) -> Dict[
 
 @pytest.fixture(scope="function")
 def mock_ollama(monkeypatch):
+    """Serve deterministic embeddings and completions instead of calling Ollama.
+
+    This replaces a fixture that never worked. It patched the legacy module-level
+    ``ollama.embeddings`` with a ``prompt=`` signature returning
+    ``{'embedding': ...}``, while every notebook and every ragkit call site uses
+    ``ollama.embed(model=, input=)`` returning ``{'embeddings': [...]}``. Nothing
+    was ever intercepted, so tests marked as mocked either reached a live daemon
+    or asserted against connection errors.
+
+    It also seeded ``RandomState(42)`` once, so *every* text received the
+    *identical* vector -- meaning any similarity assertion built on it was
+    comparing a vector to itself and could not fail.
+
+    ragkit.testing.FakeOllamaClient derives vectors from content and takes each
+    model's width from the catalog, so 384/768/1024 stay distinguishable.
     """
-    Mock Ollama API responses.
+    from ragkit import embed as ragkit_embed
+    from ragkit.testing import FakeOllamaClient
 
-    Mocks:
-    - ollama.embeddings(): Returns deterministic 768-dim vector
-    - ollama.chat(): Returns fixed test response
-
-    Args:
-        monkeypatch: pytest monkeypatch fixture
-
-    Returns:
-        Dictionary with:
-        - 'embeddings_mock': Mock function for ollama.embeddings
-        - 'chat_mock': Mock function for ollama.chat
-
-    Example:
-        >>> def test_embeddings(mock_ollama):
-        ...     result = ollama.embeddings("test text")
-        ...     assert len(result['embedding']) == 768
-    """
-    try:
-        import ollama
-    except ImportError:
-        pytest.skip("ollama not installed")
-
-    def mock_embeddings(model: str, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Mock ollama.embeddings() response"""
-        # Return deterministic embedding based on model
-        if "768" in model or "base" in model:
-            dim = 768
-        elif "384" in model or "small" in model:
-            dim = 384
-        else:
-            dim = 768
-
-        # Deterministic vector for reproducibility
-        embedding = np.random.RandomState(42).randn(dim).tolist()
-
-        return {
-            "embedding": embedding,
-            "model": model,
-            "prompt_eval_count": len(prompt.split()),
-            "eval_count": 10,
-        }
-
-    def mock_chat(model: str, messages: List[Dict[str, str]], **kwargs) -> Dict[str, Any]:
-        """Mock ollama.chat() response"""
-        return {
-            "model": model,
-            "created_at": datetime.now().isoformat(),
-            "message": {
-                "role": "assistant",
-                "content": "This is a mock response from the Ollama API.",
-            },
-            "done": True,
-            "total_duration": 1000000,
-            "load_duration": 100000,
-            "prompt_eval_count": 10,
-            "prompt_eval_duration": 200000,
-            "eval_count": 20,
-            "eval_duration": 400000,
-        }
-
-    monkeypatch.setattr("ollama.embeddings", mock_embeddings)
-    monkeypatch.setattr("ollama.chat", mock_chat)
-
-    return {
-        "embeddings_mock": mock_embeddings,
-        "chat_mock": mock_chat,
-    }
-
-
-# ============================================================================
-# Dataset Fixtures
-# ============================================================================
+    client = FakeOllamaClient()
+    monkeypatch.setattr(ragkit_embed, "_client", client)
+    return client
 
 
 @pytest.fixture(scope="function")

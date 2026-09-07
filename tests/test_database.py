@@ -99,11 +99,11 @@ class TestSchemaCreation:
 
         expected_columns = {
             'id': 'integer',
-            'model_alias': 'character varying',
-            'model_name': 'character varying',
+            'model_alias': 'text',
+            'model_name': 'text',
             'dimension': 'integer',
             'embedding_count': 'integer',
-            'chunk_source_dataset': 'character varying',
+            'chunk_source_dataset': 'text',
             'chunk_size_config': 'integer',
             'metadata_json': 'jsonb',
             'created_at': 'timestamp without time zone',
@@ -131,12 +131,12 @@ class TestSchemaCreation:
         expected_columns = {
             'id': 'integer',
             'question': 'text',
-            'source_type': 'character varying',
+            'source_type': 'text',
             'relevant_chunk_ids': 'integer[]',
-            'quality_rating': 'character varying',
+            'quality_rating': 'text',
             'human_notes': 'text',
             'created_at': 'timestamp without time zone',
-            'created_by': 'character varying',
+            'created_by': 'text',
         }
 
         for col, dtype in expected_columns.items():
@@ -159,15 +159,15 @@ class TestSchemaCreation:
 
         expected_columns = {
             'id': 'integer',
-            'experiment_name': 'character varying',
-            'notebook_path': 'character varying',
-            'embedding_model_alias': 'character varying',
-            'config_hash': 'character varying',
+            'experiment_name': 'text',
+            'notebook_path': 'text',
+            'embedding_model_alias': 'text',
+            'config_hash': 'text',
             'config_json': 'jsonb',
             'techniques_applied': 'text[]',
             'started_at': 'timestamp without time zone',
             'completed_at': 'timestamp without time zone',
-            'status': 'character varying',
+            'status': 'text',
             'notes': 'text',
         }
 
@@ -192,7 +192,7 @@ class TestSchemaCreation:
         expected_columns = {
             'id': 'integer',
             'experiment_id': 'integer',
-            'metric_name': 'character varying',
+            'metric_name': 'text',
             'metric_value': 'double precision',
             'metric_details_json': 'jsonb',
             'computed_at': 'timestamp without time zone',
@@ -279,7 +279,7 @@ class TestConstraints:
             # Insert first record
             cur.execute("""
                 INSERT INTO embedding_registry (model_alias, model_name, dimension)
-                VALUES ('test_alias_unique', 'test_model', 768)
+                VALUES ('test_alias_unique', 'mxbai_embed_large', 768)
             """)
             postgres_connection.commit()
 
@@ -363,7 +363,7 @@ class TestConstraints:
             for i, status in enumerate(valid_statuses):
                 cur.execute("""
                     INSERT INTO experiments (experiment_name, embedding_model_alias, status)
-                    VALUES (%s, 'bge_base_en_v1_5', %s)
+                    VALUES (%s, 'nomic_embed_text', %s)
                 """, (f"Experiment {i}", status))
             postgres_connection.commit()
 
@@ -380,7 +380,7 @@ class TestConstraints:
             with pytest.raises(IntegrityError):
                 cur.execute("""
                     INSERT INTO experiments (experiment_name, embedding_model_alias, status)
-                    VALUES ('Bad experiment', 'bge_base_en_v1_5', 'invalid_status')
+                    VALUES ('Bad experiment', 'nomic_embed_text', 'invalid_status')
                 """)
                 postgres_connection.commit()
 
@@ -396,7 +396,7 @@ class TestForeignKeys:
             # Insert with valid FK
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('test_exp', 'bge_base_en_v1_5')
+                VALUES ('test_exp', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()
@@ -426,7 +426,7 @@ class TestForeignKeys:
             # Create experiment
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('test_exp', 'bge_base_en_v1_5')
+                VALUES ('test_exp', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()
@@ -465,7 +465,7 @@ class TestForeignKeys:
             # Create experiment
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('cascade_test', 'bge_base_en_v1_5')
+                VALUES ('cascade_test', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()
@@ -512,7 +512,7 @@ class TestJSONBOperations:
                 INSERT INTO embedding_registry (model_alias, model_name, dimension, metadata_json)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, ('test_jsonb', 'test_model', 768, json.dumps(metadata)))
+            """, ('test_jsonb', 'mxbai_embed_large', 768, json.dumps(metadata)))
             postgres_connection.commit()
             record_id = cur.fetchone()[0]
 
@@ -540,7 +540,7 @@ class TestJSONBOperations:
                 INSERT INTO experiments (experiment_name, embedding_model_alias, config_json)
                 VALUES (%s, %s, %s)
                 RETURNING id
-            """, ('config_test', 'bge_base_en_v1_5', json.dumps(config)))
+            """, ('config_test', 'nomic_embed_text', json.dumps(config)))
             postgres_connection.commit()
             exp_id = cur.fetchone()[0]
 
@@ -557,7 +557,7 @@ class TestJSONBOperations:
             # Create experiment first
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('metrics_test', 'bge_base_en_v1_5')
+                VALUES ('metrics_test', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()
@@ -627,7 +627,7 @@ class TestJSONBOperations:
                 INSERT INTO embedding_registry (model_alias, model_name, dimension, metadata_json)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, ('update_test', 'test_model', 768, json.dumps(metadata)))
+            """, ('update_test', 'mxbai_embed_large', 768, json.dumps(metadata)))
             postgres_connection.commit()
             record_id = cur.fetchone()[0]
 
@@ -670,7 +670,7 @@ class TestArrayOperations:
             techniques = ['reranking', 'query_expansion', 'rag_fusion']
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias, techniques_applied)
-                VALUES ('tech_test', 'bge_base_en_v1_5', %s)
+                VALUES ('tech_test', 'nomic_embed_text', %s)
                 RETURNING techniques_applied
             """, (techniques,))
             postgres_connection.commit()
@@ -788,7 +788,7 @@ class TestDataIntegrity:
         with postgres_connection.cursor() as cur:
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('default_status_test', 'bge_base_en_v1_5')
+                VALUES ('default_status_test', 'nomic_embed_text')
                 RETURNING status
             """)
             postgres_connection.commit()
@@ -802,7 +802,7 @@ class TestDataIntegrity:
         with postgres_connection.cursor() as cur:
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('default_array_test', 'bge_base_en_v1_5')
+                VALUES ('default_array_test', 'nomic_embed_text')
                 RETURNING techniques_applied
             """)
             postgres_connection.commit()
@@ -824,7 +824,7 @@ class TestDataIntegrity:
                 RETURNING id
             """, (
                 'workflow_test',
-                'bge_base_en_v1_5',
+                'nomic_embed_text',
                 'running',
                 json.dumps({"top_n": 5}),
                 ['reranking']
@@ -924,7 +924,7 @@ class TestPerformance:
             # Create test data
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('perf_test', 'bge_base_en_v1_5')
+                VALUES ('perf_test', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()
@@ -967,7 +967,7 @@ class TestPerformance:
                 cur.execute("""
                     INSERT INTO experiments (experiment_name, embedding_model_alias, status)
                     VALUES (%s, %s, %s)
-                """, (f'index_test_{i}', 'bge_base_en_v1_5', status))
+                """, (f'index_test_{i}', 'nomic_embed_text', status))
             postgres_connection.commit()
 
             # Query with index
@@ -1071,7 +1071,7 @@ class TestEdgeCases:
             # Create experiment
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias)
-                VALUES ('float_test', 'bge_base_en_v1_5')
+                VALUES ('float_test', 'nomic_embed_text')
                 RETURNING id
             """)
             postgres_connection.commit()

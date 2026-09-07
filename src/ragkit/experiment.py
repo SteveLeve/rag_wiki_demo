@@ -19,6 +19,7 @@ from . import db
 from .models import canonical_alias
 
 __all__ = [
+    "CONFIG_HASH_LENGTH",
     "compute_config_hash",
     "start_experiment",
     "complete_experiment",
@@ -27,14 +28,21 @@ __all__ = [
 ]
 
 
-def compute_config_hash(config: dict[str, Any]) -> str:
-    """A stable SHA-256 over a config dict, for finding comparable runs.
+#: Length of the stored config hash. 12 hex characters is 48 bits -- ample for
+#: deduplicating experiment configurations, and short enough to read in a
+#: dashboard column or compare by eye. Values are stored in experiments.config_hash,
+#: so changing this invalidates every existing row.
+CONFIG_HASH_LENGTH = 12
 
-    Sorted keys and a canonical separator, so two dicts that differ only in
-    insertion order hash identically.
+
+def compute_config_hash(config: dict[str, Any], length: int = CONFIG_HASH_LENGTH) -> str:
+    """A stable, truncated SHA-256 over a config dict, for finding comparable runs.
+
+    Sorted keys and a canonical separator, so two dicts differing only in
+    insertion order hash identically. Pass ``length=64`` for the untruncated digest.
     """
     payload = json.dumps(config, sort_keys=True, separators=(",", ":"), default=str)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:length]
 
 
 def start_experiment(
@@ -83,16 +91,60 @@ def complete_experiment(conn, experiment_id: int, status: str = "completed", not
         )
 
 
-def save_metrics(conn, experiment_id: int, metrics: dict[str, float], question_id: int | None = None) -> None:
-    """Store one experiment's metric values."""
+def save_metrics(
+    conn,
+    experiment_id: int,
+    metrics: dict[str, Any],
+    export_to_file: bool = True,
+    export_dir: str = "data/experiment_results",
+    question_id: int | None = None,
+) -> tuple[bool, str]:
+    """Store one experiment's metrics, optionally mirroring them to a JSON file.
+
+    Args:
+        metrics: ``{name: value}``, or ``{name: {"value": v, "details": {...}}}``
+            when a metric carries supporting detail (per-question breakdowns and
+            the like).
+        export_to_file: Also write a JSON copy, so results survive a dropped database.
+
+    Returns:
+        ``(success, message)``.
+    """
     if not metrics:
-        return
-    with db.cursor(conn) as cur:
-        cur.executemany(
-            "INSERT INTO evaluation_results (experiment_id, metric_name, metric_value, question_id) "
-            "VALUES (%s, %s, %s, %s)",
-            [(experiment_id, name, float(value), question_id) for name, value in metrics.items()],
-        )
+        return True, "no metrics to save"
+
+    rows = []
+    for name, data in metrics.items():
+        if isinstance(data, dict):
+            value, details = data.get("value", 0.0), data.get("details", {})
+        else:
+            value, details = data, {}
+        rows.append((experiment_id, name, float(value), json.dumps(details or {}), question_id))
+
+    try:
+        with db.cursor(conn) as cur:
+            cur.executemany(
+                "INSERT INTO evaluation_results "
+                "(experiment_id, metric_name, metric_value, metric_details_json, question_id) "
+                "VALUES (%s, %s, %s, %s::jsonb, %s)",
+                rows,
+            )
+    except Exception as exc:  # pragma: no cover - surfaced to the notebook user
+        return False, f"failed to save metrics: {exc}"
+
+    message = f"saved {len(rows)} metrics"
+    if export_to_file:
+        import os
+        from datetime import datetime
+
+        os.makedirs(export_dir, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(export_dir, f"experiment_{experiment_id}_{stamp}.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"experiment_id": experiment_id, "metrics": metrics}, fh, indent=2, default=str)
+        message += f", exported to {path}"
+
+    return True, message
 
 
 def compare_experiments(conn, experiment_ids: Sequence[int] | None = None) -> list[dict[str, Any]]:

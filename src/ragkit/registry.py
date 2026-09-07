@@ -55,18 +55,16 @@ def register_model(
         cur.execute(
             """
             INSERT INTO embedding_registry
-                (model_alias, model_name, ollama_tag, table_name, dimension,
-                 normalized, schema_version, chunk_source_dataset, chunk_size_config,
-                 metadata_json)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                (model_alias, model_name, dimension, normalized, schema_version,
+                 chunk_source_dataset, chunk_size_config, metadata_json)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)
             ON CONFLICT (model_alias) DO UPDATE SET
-                ollama_tag    = EXCLUDED.ollama_tag,
-                table_name    = EXCLUDED.table_name,
+                model_name    = EXCLUDED.model_name,
                 dimension     = EXCLUDED.dimension,
                 last_accessed = CURRENT_TIMESTAMP
             """,
             (
-                spec.alias, spec.ollama_tag, spec.ollama_tag, table, spec.dimension,
+                spec.alias, spec.ollama_tag, spec.dimension,
                 spec.normalized, db.SCHEMA_VERSION, source_dataset, chunk_size,
                 __import__("json").dumps(metadata or {}),
             ),
@@ -89,7 +87,7 @@ def get_model(conn, alias_or_tag: str) -> RegisteredModel | None:
     alias = canonical_alias(alias_or_tag)
     with db.cursor(conn, commit=False) as cur:
         cur.execute(
-            "SELECT model_alias, ollama_tag, table_name, dimension, embedding_count, normalized "
+            "SELECT model_alias, model_name, table_name, dimension, embedding_count, normalized "
             "FROM embedding_registry WHERE model_alias = %s",
             (alias,),
         )
@@ -101,7 +99,7 @@ def list_models(conn) -> list[RegisteredModel]:
     """Every registered model, most recently used first."""
     with db.cursor(conn, commit=False) as cur:
         cur.execute(
-            "SELECT model_alias, ollama_tag, table_name, dimension, embedding_count, normalized "
+            "SELECT model_alias, model_name, table_name, dimension, embedding_count, normalized "
             "FROM embedding_registry ORDER BY last_accessed DESC"
         )
         rows = cur.fetchall()

@@ -81,9 +81,12 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS embedding_registry (
     id                  SERIAL PRIMARY KEY,
     model_alias         TEXT UNIQUE NOT NULL,
+    -- model_name IS the Ollama tag ('nomic-embed-text'). Keeping a separate
+    -- ollama_tag column would just be a second place for the same fact to drift.
     model_name          TEXT NOT NULL,
-    ollama_tag          TEXT NOT NULL,
-    table_name          TEXT NOT NULL UNIQUE,
+    -- Derived, not stored by callers: the table name is a pure function of the
+    -- alias, so making it generated removes any way for the two to disagree.
+    table_name          TEXT GENERATED ALWAYS AS ('embeddings_' || model_alias) STORED,
     dimension           INT NOT NULL,
     distance_metric     TEXT NOT NULL DEFAULT 'cosine',
     normalized          BOOLEAN NOT NULL DEFAULT TRUE,
@@ -131,6 +134,7 @@ CREATE TABLE IF NOT EXISTS evaluation_results (
     experiment_id  INT NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     metric_name    TEXT NOT NULL,
     metric_value   FLOAT NOT NULL,
+    metric_details_json JSONB DEFAULT '{}'::jsonb,
     question_id    INT REFERENCES evaluation_groundtruth(id),
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

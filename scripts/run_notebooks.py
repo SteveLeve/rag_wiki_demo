@@ -25,6 +25,13 @@ ORDER = {
                    "02-rag-postgresql-persistent"],
 }
 
+# The tier order is not simply the directory order. evaluation-lab/01 populates
+# evaluation_groundtruth, and the advanced-techniques notebooks measure themselves
+# against it -- so it has to run before them, despite living in a later folder.
+# Running the tiers naively leaves ground_truth_questions empty and the advanced
+# notebooks fail on an empty list.
+GROUND_TRUTH_FIRST = ("evaluation-lab", "01-create-ground-truth-human-in-loop")
+
 
 def ordered(tier: str) -> list[Path]:
     paths = sorted((ROOT / tier).glob("*.ipynb"))
@@ -41,10 +48,34 @@ def main() -> int:
     failures: list[tuple[str, str]] = []
     ran = 0
 
+
     with tempfile.TemporaryDirectory() as tmp:
+        # Seed ground truth before the tiers that consume it.
+        gt_tier, gt_stem = GROUND_TRUTH_FIRST
+        gt_path = ROOT / gt_tier / f"{gt_stem}.ipynb"
+        seeded = set()
+        if gt_path.exists() and gt_tier in tiers and "advanced-techniques" in tiers:
+            print(f"\n=== prerequisite " + "=" * 55)
+            start = time.time()
+            try:
+                papermill.execute_notebook(
+                    str(gt_path), str(Path(tmp) / gt_path.name),
+                    kernel_name="python3", cwd=str(ROOT), progress_bar=False,
+                )
+            except Exception as exc:
+                detail = next((l for l in reversed(str(exc).strip().splitlines()) if l.strip()), "")[:110]
+                print(f"  FAIL  {gt_path.relative_to(ROOT)}  ({time.time()-start:.0f}s)  {detail}")
+                failures.append((str(gt_path.relative_to(ROOT)), detail))
+            else:
+                print(f"  ok    {gt_path.relative_to(ROOT)}  ({time.time()-start:.0f}s)  [seeds ground truth]")
+            ran += 1
+            seeded.add(gt_path)
+
         for tier in tiers:
             print(f"\n=== {tier} " + "=" * (60 - len(tier)))
             for path in ordered(tier):
+                if path in seeded:
+                    continue
                 rel = path.relative_to(ROOT)
                 start = time.time()
                 try:

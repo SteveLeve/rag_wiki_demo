@@ -236,7 +236,7 @@ Intermediate
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=rag_db \
-  -p 5432:5432 \
+  -p 127.0.0.1:5433:5432 \
   -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 ```

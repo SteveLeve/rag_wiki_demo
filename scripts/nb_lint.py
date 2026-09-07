@@ -35,6 +35,15 @@ BANNED = [
 ]
 
 
+# Helpers that live in ragkit. A notebook must import one or define it inline as
+# a marked teaching copy; reading it without either is a NameError on a clean run.
+SHARED_HELPERS = {
+    "start_experiment", "complete_experiment", "save_metrics", "compare_experiments",
+    "precision_at_k", "recall_at_k", "ndcg_at_k", "mean_reciprocal_rank", "dcg_score",
+    "chunk_text", "cosine_similarity", "embed_one", "embed_texts", "table_name_for",
+    "reciprocal_rank_fusion",
+}
+
 # Statement-shaped fragments that should never appear inside a comment.
 SWALLOWED = re.compile(r"(?:print\(|= \[\]|with .*:|for .* in |if .*:|cur\.execute|def )")
 
@@ -78,9 +87,12 @@ def undefined_constants(source: str) -> list[str]:
                 for arg in node.args.args + node.args.kwonlyargs:
                     assigned.add(arg.arg)
 
+    missing = used - assigned - set(dir(builtins))
     return sorted(
-        name for name in used - assigned - set(dir(builtins))
-        if re.fullmatch(r"[A-Z][A-Z0-9_]{2,}", name)
+        name for name in missing
+        # SCREAMING_CASE config knobs, plus the shared helpers a notebook must
+        # either import from ragkit or define inline as a teaching copy.
+        if re.fullmatch(r"[A-Z][A-Z0-9_]{2,}", name) or name in SHARED_HELPERS
     )
 
 

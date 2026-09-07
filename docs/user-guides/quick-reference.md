@@ -65,7 +65,7 @@ notebook restarts?
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=rag_db \
-  -p 5432:5432 \
+  -p 127.0.0.1:5433:5432 \
   -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 ```
@@ -114,11 +114,11 @@ LOCAL_DATASET_PATH = 'wikipedia_dataset_10mb.json'
 ```python
 # In foundation/02-rag-postgresql-persistent.ipynb
 TARGET_SIZE_MB = 10
-EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+EMBEDDING_MODEL_ALIAS = 'nomic_embed_text'
 
 POSTGRES_CONFIG = {
     'host': 'localhost',
-    'port': 5432,
+    'port': 5433,
     'database': 'rag_db',
     'user': 'postgres',
     'password': 'postgres',
@@ -128,12 +128,12 @@ POSTGRES_CONFIG = {
 ### Example 4: Compare Two Models (PostgreSQL)
 ```python
 # First run (wikipedia-rag-tutorial-advanced.ipynb)
-EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
-EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+EMBEDDING_MODEL = 'nomic-embed-text'
+EMBEDDING_MODEL_ALIAS = 'nomic_embed_text'
 
 # Second run (copy of advanced notebook with different model)
-EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-small-en-v1.5-gguf'
-EMBEDDING_MODEL_ALIAS = 'bge_small_en_v1.5'
+EMBEDDING_MODEL = 'all-minilm'
+EMBEDDING_MODEL_ALIAS = 'all_minilm_l6_v2'
 
 # Results stored in separate tables for comparison
 ```
@@ -152,7 +152,7 @@ with open('wikipedia_dataset_10mb.json', 'r') as f:
 
 ### From PostgreSQL
 ```python
-db = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_bge_base_en_v1_5')
+db = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_nomic_embed_text')
 results = db.similarity_search(query_embedding, top_n=3)
 ```
 

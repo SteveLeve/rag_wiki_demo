@@ -81,8 +81,8 @@ This project serves as a learning platform and proof-of-concept for:
 
 2. **Pull Required Models**:
    ```bash
-   ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
-   ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+   ollama pull nomic-embed-text
+   ollama pull llama3.2:3b
    ```
 
 3. **Install Python Dependencies**:
@@ -161,9 +161,15 @@ See **[docs/INDEX.md](./docs/INDEX.md)** for complete learning paths.
 3. Compare retrieval quality using the same queries
 
 Example models to try:
-- `hf.co/CompendiumLabs/bge-base-en-v1.5-gguf` (default)
-- `hf.co/CompendiumLabs/bge-small-en-v1.5-gguf` (faster)
-- `hf.co/CompendiumLabs/bge-large-en-v1.5-gguf` (better quality)
+| Alias | `ollama pull` | Dim | When to use |
+|---|---|---|---|
+| `all_minilm_l6_v2` | `all-minilm` | 384 | Fastest, smallest index |
+| `nomic_embed_text` | `nomic-embed-text` | 768 | **Default.** Best quality per MB |
+| `mxbai_embed_large` | `mxbai-embed-large` | 1024 | Highest quality, largest index |
+
+All three can coexist in one database: each gets its own table at its own
+dimension, and the registry records which is which. That is what makes
+`intermediate/04` and `evaluation-lab/05` able to compare them for real.
 
 ### RAG Evaluation Techniques
 
@@ -202,7 +208,7 @@ Example models to try:
    docker run --name postgres_rag \
      -e POSTGRES_PASSWORD=yourpassword \
      -e POSTGRES_DB=wikipedia_rag \
-     -p 5432:5432 \
+     -p 127.0.0.1:5433:5432 \
      -d postgres:16
    ```
 
@@ -218,7 +224,7 @@ Example models to try:
      chunk_id TEXT UNIQUE,
      title TEXT,
      text TEXT,
-     embedding vector(768)
+     embedding vector(N)   -- N comes from the registry, not a literal
    );
 
    -- Create index for efficient similarity search
@@ -234,7 +240,7 @@ Example models to try:
 
    conn = psycopg2.connect(
        host="localhost",
-       port=5432,
+       port=5433,
        database="wikipedia_rag",
        user="postgres",
        password="yourpassword"
@@ -271,7 +277,7 @@ Example models to try:
      chunk_id TEXT UNIQUE,
      title TEXT,
      text TEXT,
-     embedding vector(768)
+     embedding vector(N)   -- N comes from the registry, not a literal
    );
 
    CREATE INDEX ON wikipedia_chunks
@@ -285,7 +291,7 @@ Example models to try:
 
    conn = psycopg2.connect(
        host="<neon-host>",
-       port=5432,
+       port=5433,
        database="wikipedia_rag",
        user="<neon-user>",
        password="<neon-password>"
@@ -322,7 +328,7 @@ Example models to try:
      chunk_id TEXT UNIQUE,
      title TEXT,
      text TEXT,
-     embedding vector(768)
+     embedding vector(N)   -- N comes from the registry, not a literal
    );
 
    CREATE INDEX ON wikipedia_chunks
@@ -380,7 +386,7 @@ See **embedding-analysis-template.ipynb** for examples and code snippets.
 Example experiments:
 ```
 embedding-analysis-template.ipynb          # Template & examples
-experiment-bge-vs-minilm.ipynb            # Compare embedding models
+experiment-nomic-vs-minilm.ipynb          # Compare embedding models
 experiment-chunk-size-impact.ipynb        # Test different chunk sizes
 experiment-top-n-threshold.ipynb          # Find optimal retrieval count
 ```
@@ -448,7 +454,7 @@ for test in test_cases:
 ollama list
 
 # Re-pull if needed
-ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
+ollama pull nomic-embed-text
 ```
 
 **2. Out of Memory During Embedding**
@@ -467,25 +473,21 @@ ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
 - Improve chunking strategy
 - Use a larger language model
 
-## 📚 Next Steps
+## 📚 Where to go next
 
-### Short Term
-- [x] Build basic RAG pipeline
-- [ ] Implement evaluation metrics
-- [ ] Compare 3+ embedding models
-- [ ] Test with different chunk sizes
+Everything in the original roadmap shipped. The curriculum now runs:
 
-### Medium Term
-- [ ] Add reranking layer
-- [ ] Implement hybrid search (vector + keyword)
-- [ ] Deploy to Neon, Supabase, or self-hosted PostgreSQL
-- [ ] Build simple web interface
+- **foundation/** — RAG from scratch, in memory then persisted to PostgreSQL
+- **intermediate/** — reusing embeddings from the registry, comparing models
+- **advanced-techniques/** — reranking, query expansion, hybrid search, semantic
+  chunking, citation tracking, and a combined pipeline
+- **evaluation-lab/** — ground truth, metrics, baselines, and a dashboard
 
-### Long Term
-- [ ] Implement query expansion
-- [ ] Add citation tracking
-- [ ] Build evaluation dashboard
-- [ ] Scale to larger datasets
+Ideas worth trying once you have been through it:
+
+- Swap the corpus for your own documents and see which techniques still help
+- Add a model to the catalog in `src/ragkit/models.py` and compare it
+- Push chunk size and overlap around, and measure rather than guess
 
 ## 📖 Resources
 
@@ -500,7 +502,8 @@ ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
 - [pgvector Guide](https://github.com/pgvector/pgvector)
 
 ### Embedding Models
-- [BGE Embeddings](https://huggingface.co/BAAI/bge-base-en-v1.5)
+- [Nomic Embed](https://www.nomic.ai/blog/posts/nomic-embed-text-v1)
+- [Ollama embedding models](https://ollama.com/search?c=embedding)
 - [Sentence Transformers](https://www.sbert.net/)
 - [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard)
 

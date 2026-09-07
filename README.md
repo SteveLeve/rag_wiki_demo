@@ -120,7 +120,7 @@ The `foundation/` directory contains 5 well-documented notebooks:
 2. Run `foundation/01-basic-rag-in-memory.ipynb` (standalone, no database)
 3. Then run `foundation/02-rag-postgresql-persistent.ipynb` (if you want persistence)
 
-For detailed setup, see **[foundation/README.md](./foundation/README.md)** or **[POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)**
+For detailed setup, see **[foundation/README.md](./foundation/README.md)** or **[docs/user-guides/postgres-setup.md](./docs/user-guides/postgres-setup.md)**
 
 ### Next Steps
 
@@ -129,7 +129,7 @@ After foundation, explore:
 - **advanced-techniques/** - Reranking, query expansion, hybrid search, etc. (4-6 hours)
 - **evaluation-lab/** - Measure RAG quality with metrics (3-5 hours)
 
-See **[INDEX.md](./INDEX.md)** for complete learning paths.
+See **[docs/INDEX.md](./docs/INDEX.md)** for complete learning paths.
 
 ## 📊 Dataset Specifications
 

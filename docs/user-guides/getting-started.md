@@ -97,7 +97,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Verify success message: "✓ Vector database ready with X embeddings in PostgreSQL!"
 
 ### Create Analysis Notebook
-- [ ] Read [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb)
+- [ ] Read [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb)
 - [ ] Create a copy:
   ```bash
   cp embedding-analysis-template.ipynb my-analysis.ipynb
@@ -254,7 +254,7 @@ After completing your chosen path:
    - Experiment: Different `top_n` values in retrieval
 
 3. **Plan Your Experiments** (1 hour)
-   - Use: [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) as template
+   - Use: [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb) as template
    - Try: Custom evaluation metrics
    - Analyze: Retrieval quality by query type
 
@@ -273,8 +273,7 @@ After completing your chosen path:
 | Get started quickly | This checklist (index.md) |
 | Set up PostgreSQL | [postgres-setup.md](./postgres-setup.md) |
 | Choose a storage backend | [quick-reference.md](./quick-reference.md) |
-| See what's new | [enhancement-summary.md](../implementation/enhancement-summary.md) |
-| Copy code examples | [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) |
+| Copy code examples | [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb) |
 | Learn RAG concepts | [readme.md](../../README.md) → "Experimentation Guide" |
 | Troubleshoot issues | [postgres-setup.md](./postgres-setup.md) → "Troubleshooting" |
 

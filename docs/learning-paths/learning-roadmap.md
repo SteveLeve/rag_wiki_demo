@@ -297,7 +297,7 @@ experiment_id = start_experiment(..., config=config)
 
 For detailed information:
 - Technique-specific guides → See notebook docstrings
-- Evaluation methodology → See [evaluation-guide.md](../development/testing/evaluation-guide.md)
+- Evaluation methodology → See [Evaluation Concepts](./evaluation-concepts.md)
 - Configuration reference → See [quick-reference.md](../user-guides/quick-reference.md)
 
 Happy learning! 🚀

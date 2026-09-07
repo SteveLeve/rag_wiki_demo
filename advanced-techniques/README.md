@@ -352,7 +352,7 @@ After completing this layer, you'll have:
 
 ## Resources
 
-- `LEARNING_ROADMAP.md` - Full progression map
+- `docs/learning-paths/learning-roadmap.md` - Full progression map
 - `EVALUATION_GUIDE.md` - How to measure improvements
 - `foundation/00-registry-and-tracking-utilities.ipynb` - Available functions
 - `intermediate/README.md` - What intermediate notebooks teach

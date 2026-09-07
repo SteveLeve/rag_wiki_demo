@@ -1852,7 +1852,7 @@ Skip basics, dive into:
 
 #### Detailed Guides
 - `POSTGRESQL_SETUP.md` - Database setup if using persistent storage (10 min)
-- `LEARNING_ROADMAP.md` - Detailed progression, time estimates, success criteria (10 min)
+- `docs/learning-paths/learning-roadmap.md` - Detailed progression, time estimates, success criteria (10 min)
 - `EVALUATION_GUIDE.md` - Comprehensive evaluation methodology (15 min)
 
 #### For Specific Topics

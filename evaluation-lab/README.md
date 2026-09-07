@@ -402,7 +402,7 @@ Total: 3-5 hours for complete evaluation
 
 ## Resources
 
-- `LEARNING_ROADMAP.md` - Full progression
+- `docs/learning-paths/learning-roadmap.md` - Full progression
 - `EVALUATION_GUIDE.md` - Detailed metrics explanations
 - `foundation/00-registry-and-tracking-utilities.ipynb` - Available functions
 - `advanced-techniques/README.md` - What techniques to evaluate

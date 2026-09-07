@@ -164,7 +164,7 @@ Once you complete these intermediate notebooks:
 
 - `foundation/README.md` - What foundation notebooks do
 - `foundation/00-registry-and-tracking-utilities.ipynb` - Available utility functions
-- `LEARNING_ROADMAP.md` - Full learning progression
+- `docs/learning-paths/learning-roadmap.md` - Full learning progression
 - `EVALUATION_GUIDE.md` - How to measure RAG quality
 
 ---

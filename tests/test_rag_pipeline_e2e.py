@@ -749,8 +749,11 @@ def test_load_or_generate_embedding_pattern(postgres_connection, sample_embeddin
 
     # Step 5: Query returns same results
     with postgres_connection.cursor() as cur:
+        # Ask PostgreSQL for the dimension rather than measuring the column.
+        # Without a psycopg2 type adapter a vector comes back as its text
+        # representation, so len() would count characters, not dimensions.
         cur.execute("""
-            SELECT chunk_text, embedding FROM cached_embeddings
+            SELECT chunk_text, vector_dims(embedding) FROM cached_embeddings
             ORDER BY created_at
         """)
         cached_results = cur.fetchall()
@@ -758,9 +761,9 @@ def test_load_or_generate_embedding_pattern(postgres_connection, sample_embeddin
     assert len(cached_results) == len(chunks)
 
     # Verify embeddings are still there
-    for (chunk, emb) in cached_results:
+    for (chunk, dims) in cached_results:
         assert chunk in chunks
-        assert len(emb) == 768
+        assert dims == 768
 
 
 # ============================================================================

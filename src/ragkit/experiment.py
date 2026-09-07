@@ -79,8 +79,10 @@ def start_experiment(
         return cur.fetchone()[0]
 
 
-def complete_experiment(conn, experiment_id: int, status: str = "completed", notes: str | None = None) -> None:
-    """Close an experiment row."""
+def complete_experiment(
+    conn, experiment_id: int, status: str = "completed", notes: str | None = None
+) -> bool:
+    """Close an experiment row. Returns True on success, matching the notebook contract."""
     if status not in {"completed", "failed"}:
         raise ValueError(f"status must be 'completed' or 'failed', got {status!r}")
     with db.cursor(conn) as cur:
@@ -89,6 +91,7 @@ def complete_experiment(conn, experiment_id: int, status: str = "completed", not
             "notes = COALESCE(%s, notes) WHERE id = %s",
             (status, notes, experiment_id),
         )
+    return True
 
 
 def save_metrics(
@@ -147,18 +150,53 @@ def save_metrics(
     return True, message
 
 
-def compare_experiments(conn, experiment_ids: Sequence[int] | None = None) -> list[dict[str, Any]]:
-    """Mean metric values per experiment, for the dashboard and comparison notebooks."""
-    sql = """
+def compare_experiments(
+    conn,
+    experiment_ids: Sequence[int] | None = None,
+    metric_names: Sequence[str] | None = None,
+):
+    """Compare experiments side by side: experiments as rows, metrics as columns.
+
+    Returns a pandas DataFrame.
+
+    Experiments with no recorded embedding model show as "(unspecified)" rather
+    than disappearing. The notebook version pivoted on the raw column, and
+    pandas drops NaN index groups, so a run recorded without a model silently
+    vanished from the comparison instead of showing up with blank metrics.
+    """
+    import pandas as pd
+
+    clauses, params = [], []
+    if experiment_ids:
+        clauses.append("e.id = ANY(%s)")
+        params.append(list(experiment_ids))
+    if metric_names:
+        clauses.append("r.metric_name = ANY(%s)")
+        params.append(list(metric_names))
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    sql = f"""
         SELECT e.id, e.experiment_name, e.embedding_model_alias,
-               r.metric_name, AVG(r.metric_value) AS mean_value, COUNT(*) AS n
+               r.metric_name, r.metric_value
         FROM experiments e
-        JOIN evaluation_results r ON r.experiment_id = e.id
+        LEFT JOIN evaluation_results r ON e.id = r.experiment_id
         {where}
-        GROUP BY e.id, e.experiment_name, e.embedding_model_alias, r.metric_name
-        ORDER BY e.id, r.metric_name
-    """.format(where="WHERE e.id = ANY(%s)" if experiment_ids else "")
+    """
     with db.cursor(conn, commit=False) as cur:
-        cur.execute(sql, (list(experiment_ids),) if experiment_ids else ())
+        cur.execute(sql, params)
+        rows = cur.fetchall()
         cols = [d[0] for d in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+    df = pd.DataFrame(rows, columns=cols)
+    if df.empty:
+        return df
+
+    # Fill before pivoting: pandas drops NaN index groups, which is what made
+    # alias-less experiments disappear. Filling keeps the row and labels it.
+    df["embedding_model_alias"] = df["embedding_model_alias"].fillna("(unspecified)")
+
+    return df.pivot_table(
+        index=["id", "experiment_name", "embedding_model_alias"],
+        columns="metric_name",
+        values="metric_value",
+    ).reset_index()

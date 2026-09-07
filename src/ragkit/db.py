@@ -79,24 +79,28 @@ CORE_SCHEMA = """
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS embedding_registry (
+    -- Columns 1-10 keep their v1 ordinal positions. Notebooks and tests use
+    -- SELECT * with positional indexing, so inserting a column in the middle
+    -- silently shifts every one of those reads. New columns go at the end.
     id                  SERIAL PRIMARY KEY,
     model_alias         TEXT UNIQUE NOT NULL,
-    -- model_name IS the Ollama tag ('nomic-embed-text'). Keeping a separate
-    -- ollama_tag column would just be a second place for the same fact to drift.
+    -- model_name IS the Ollama tag ('nomic-embed-text'). A separate ollama_tag
+    -- column would just be a second place for the same fact to drift.
     model_name          TEXT NOT NULL,
-    -- Derived, not stored by callers: the table name is a pure function of the
-    -- alias, so making it generated removes any way for the two to disagree.
-    table_name          TEXT GENERATED ALWAYS AS ('embeddings_' || model_alias) STORED,
     dimension           INT NOT NULL,
-    distance_metric     TEXT NOT NULL DEFAULT 'cosine',
-    normalized          BOOLEAN NOT NULL DEFAULT TRUE,
-    schema_version      INT NOT NULL DEFAULT 2,
     embedding_count     INT DEFAULT 0,
     chunk_source_dataset TEXT,
     chunk_size_config   INT,
     metadata_json       JSONB DEFAULT '{}'::jsonb,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_accessed       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- v2 additions
+    -- Derived, never supplied by callers: the table name is a pure function of
+    -- the alias, so generating it removes any way for the two to disagree.
+    table_name          TEXT GENERATED ALWAYS AS ('embeddings_' || model_alias) STORED,
+    distance_metric     TEXT NOT NULL DEFAULT 'cosine',
+    normalized          BOOLEAN NOT NULL DEFAULT TRUE,
+    schema_version      INT NOT NULL DEFAULT 2,
     -- Enforced in the database, not just in Python: convention alone already
     -- failed once and produced two spellings of the same model.
     CONSTRAINT model_alias_is_identifier CHECK (model_alias ~ '^[a-z][a-z0-9_]*$'),

@@ -132,7 +132,7 @@ class TestSchemaCreation:
             'id': 'integer',
             'question': 'text',
             'source_type': 'text',
-            'relevant_chunk_ids': 'integer[]',
+            'relevant_chunk_ids': 'ARRAY',
             'quality_rating': 'text',
             'human_notes': 'text',
             'created_at': 'timestamp without time zone',
@@ -164,7 +164,7 @@ class TestSchemaCreation:
             'embedding_model_alias': 'text',
             'config_hash': 'text',
             'config_json': 'jsonb',
-            'techniques_applied': 'text[]',
+            'techniques_applied': 'ARRAY',
             'started_at': 'timestamp without time zone',
             'completed_at': 'timestamp without time zone',
             'status': 'text',
@@ -195,7 +195,7 @@ class TestSchemaCreation:
             'metric_name': 'text',
             'metric_value': 'double precision',
             'metric_details_json': 'jsonb',
-            'computed_at': 'timestamp without time zone',
+            'created_at': 'timestamp without time zone',
         }
 
         for col, dtype in expected_columns.items():

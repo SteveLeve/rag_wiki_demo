@@ -128,6 +128,21 @@ def postgres_test_db(postgres_test_config: Dict[str, Any]) -> psycopg2.extension
         cur.execute("TRUNCATE TABLE experiments CASCADE")
         cur.execute("TRUNCATE TABLE evaluation_groundtruth CASCADE")
         cur.execute("TRUNCATE TABLE embedding_registry CASCADE")
+        # Tests create their own tables too (test_embeddings, chunk_embeddings,
+        # large_test_embeddings, cached_embeddings, ...). Truncating only the four
+        # core tables left those behind, so rows accumulated across every test in a
+        # class and counts came out as exact multiples of what was expected.
+        # This is a dedicated test database, so anything outside the core schema goes.
+        cur.execute(
+            """
+            SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public'
+              AND tablename NOT IN ('embedding_registry', 'evaluation_groundtruth',
+                                    'experiments', 'evaluation_results')
+            """
+        )
+        for (name,) in cur.fetchall():
+            cur.execute(f"DROP TABLE IF EXISTS {name} CASCADE")
     conn.commit()
     conn.close()
 

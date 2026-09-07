@@ -794,18 +794,24 @@ class TestPostgreSQLVectorDB:
             ''')
 
             # Insert test embedding
-            embedding_768 = list(np.zeros(768))
+            # pgvector wants a literal like '[0.0,0.0,...]'. Passing a Python list
+            # makes psycopg2 build a Postgres ARRAY[...] instead, and under numpy 2
+            # each element reprs as np.float64(0.0), producing invalid SQL.
+            embedding_768 = str([0.0] * 768)
             cur.execute('''
                 INSERT INTO test_dim (chunk_text, embedding)
                 VALUES (%s, %s)
             ''', ("test", embedding_768))
             postgres_connection.commit()
 
-            # Verify dimension can be checked
-            cur.execute("SELECT embedding FROM test_dim LIMIT 1")
+            # Ask PostgreSQL for the dimension. Selecting the column itself
+            # returns pgvector's text representation ('[0,0,...]') because no
+            # psycopg2 type adapter is registered, so len() would measure
+            # characters, not dimensions.
+            cur.execute("SELECT vector_dims(embedding) FROM test_dim LIMIT 1")
             result = cur.fetchone()
-            if result and result[0]:
-                assert len(result[0]) == 768
+            assert result is not None
+            assert result[0] == 768
 
     @pytest.mark.integration
     @pytest.mark.postgres

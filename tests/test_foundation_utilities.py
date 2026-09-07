@@ -39,8 +39,9 @@ import pytest
 # ============================================================================
 
 from ragkit.experiment import (
-    compute_config_hash,
+    compare_experiments,
     complete_experiment,
+    compute_config_hash,
     save_metrics,
 )
 
@@ -276,55 +277,6 @@ def list_experiments(db_connection, limit: int = 20,
     return pd.read_sql(query, db_connection, params=params)
 
 
-def compare_experiments(db_connection, experiment_ids: list,
-                       metric_names: list = None) -> pd.DataFrame:
-    """Compare metrics across multiple experiments side-by-side.
-
-    Args:
-        db_connection: PostgreSQL connection
-        experiment_ids: List of experiment IDs to compare
-        metric_names: Specific metrics to compare (if None, all metrics)
-
-    Returns:
-        DataFrame with experiments as rows, metrics as columns
-    """
-    if not experiment_ids:
-        return pd.DataFrame()
-
-    placeholders = ','.join(['%s'] * len(experiment_ids))
-
-    query = f'''
-        SELECT
-            e.id,
-            e.experiment_name,
-            e.embedding_model_alias,
-            r.metric_name,
-            r.metric_value
-        FROM experiments e
-        LEFT JOIN evaluation_results r ON e.id = r.experiment_id
-        WHERE e.id IN ({placeholders})
-    '''
-
-    if metric_names:
-        placeholders_metrics = ','.join(['%s'] * len(metric_names))
-        query += f' AND r.metric_name IN ({placeholders_metrics})'
-        params = experiment_ids + metric_names
-    else:
-        params = experiment_ids
-
-    df = pd.read_sql(query, db_connection, params=params)
-
-    if df.empty:
-        return df
-
-    # Pivot to get metrics as columns
-    return df.pivot_table(
-        index=['id', 'experiment_name', 'embedding_model_alias'],
-        columns='metric_name',
-        values='metric_value'
-    ).reset_index()
-
-
 # ============================================================================
 # Test Classes and Methods
 # ============================================================================
@@ -452,7 +404,7 @@ class TestRegisterEmbedding:
         # Verify metadata
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT metadata_json FROM embedding_registry WHERE model_alias = %s', ('meta_model',))
-            stored_meta = json.loads(cur.fetchone()[0])
+            stored_meta = cur.fetchone()[0]
             assert stored_meta == metadata
 
     @pytest.mark.postgres
@@ -468,7 +420,7 @@ class TestRegisterEmbedding:
 
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT metadata_json FROM embedding_registry WHERE model_alias = %s', ('no_meta_model',))
-            meta = json.loads(cur.fetchone()[0])
+            meta = cur.fetchone()[0]
             assert meta == {}
 
     @pytest.mark.postgres
@@ -716,7 +668,7 @@ class TestExperimentLifecycle:
 
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT config_json FROM experiments WHERE id = %s', (exp_id,))
-            stored_config = json.loads(cur.fetchone()[0])
+            stored_config = cur.fetchone()[0]
             assert stored_config == config
 
 
@@ -784,7 +736,7 @@ class TestSaveMetrics:
 
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT metric_details_json FROM evaluation_results WHERE metric_name = %s', ('accuracy',))
-            details = json.loads(cur.fetchone()[0])
+            details = cur.fetchone()[0]
             assert details['true_positives'] == 95
 
     @pytest.mark.postgres

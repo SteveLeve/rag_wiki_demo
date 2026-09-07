@@ -58,6 +58,7 @@ dev = [
 # Visualization dependencies (for charts/plots in notebooks)
 viz = [
     "matplotlib>=3.10.0",
+    "seaborn>=0.13",     # used by the comparison and dashboard notebooks
 ]
 
 # Advanced RAG techniques dependencies

@@ -76,14 +76,40 @@ class FakeOllamaClient:
             "embeddings": [fake_embedding(t, width) for t in texts],
         }
 
-    def chat(self, model: str, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
+    def chat(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        stream: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        """Return a completion, or an iterator of chunks when stream=True.
+
+        Streaming matters: foundation/01 consumes ollama.chat(stream=True) in a
+        for-loop to print tokens as they arrive. A fake that only returned a dict
+        would be iterated as a dict -- yielding its *keys* -- and fail with a
+        confusing TypeError far from the cause.
+        """
         self.chat_calls.append({"model": model, "messages": messages, **kwargs})
         last = messages[-1]["content"] if messages else ""
-        return {
-            "model": model,
-            "message": {
-                "role": "assistant",
-                "content": f"[fake completion for: {last[:80]}]",
-            },
-            "done": True,
-        }
+        text = f"[fake completion for: {last[:80]}]"
+
+        if not stream:
+            return {
+                "model": model,
+                "message": {"role": "assistant", "content": text},
+                "done": True,
+            }
+
+        def chunks():
+            words = text.split(" ")
+            for i, word in enumerate(words):
+                piece = word if i == len(words) - 1 else word + " "
+                yield {
+                    "model": model,
+                    "message": {"role": "assistant", "content": piece},
+                    "done": False,
+                }
+            yield {"model": model, "message": {"role": "assistant", "content": ""}, "done": True}
+
+        return chunks()

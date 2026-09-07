@@ -82,7 +82,7 @@ When you run `00-setup-postgres-schema.ipynb`, it creates 4 tables:
 
 ```
 embedding_registry
-├─ Catalog of embedding models (BGE 768-dim, etc.)
+├─ Catalog of embedding models (384 / 768 / 1024-dim)
 ├─ Stores: dimension, chunk count, dataset source
 └─ Used by: foundation/02, intermediate/03-04, advanced/05-10
 
@@ -147,8 +147,8 @@ evaluation-lab/01-04 (Create test set, measure metrics, compare, visualize)
 
 ### Before foundation/01
 - [ ] Ollama installed
-- [ ] Models downloaded: `ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf`
-- [ ] Models downloaded: `ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF`
+- [ ] Models downloaded: `ollama pull nomic-embed-text`
+- [ ] Models downloaded: `ollama pull llama3.2:3b`
 - [ ] Python packages installed: `pip install ollama datasets jupyter`
 
 ### Before foundation/02

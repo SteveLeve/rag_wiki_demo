@@ -10,6 +10,7 @@ recurring, and several recurred across six notebooks before anyone noticed.
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -32,6 +33,10 @@ BANNED = [
     (re.compile(r"^\s*(?!#).*\binput\s*\(", re.M),
      "interactive input(); it hangs papermill forever"),
 ]
+
+
+# Statement-shaped fragments that should never appear inside a comment.
+SWALLOWED = re.compile(r"(?:print\(|= \[\]|with .*:|for .* in |if .*:|cur\.execute|def )")
 
 
 def cell_source(cell: dict) -> str:
@@ -62,6 +67,30 @@ def check(path: Path) -> list[str]:
         if cell.get("outputs") or cell.get("execution_count") is not None:
             problems.append(f"{path}: cell {i} has committed output; strip before commit")
         src = cell_source(cell)
+
+        # Every code cell must be valid Python. A codemod that emits a wrongly
+        # indented replacement produces a cell that only fails at execution time,
+        # which is far too late and costs a full papermill run to discover.
+        if not any(line.lstrip().startswith(("%", "!")) for line in src.splitlines()):
+            try:
+                ast.parse(src)
+            except SyntaxError as exc:
+                problems.append(
+                    f"{path}: cell {i}: {type(exc).__name__} on line {exc.lineno}: {exc.msg}"
+                )
+
+        # A comment line that has swallowed real code. Several cells in this repo
+        # shipped with whole blocks flattened onto one line; when that line began
+        # with '#', the entire block became a comment. It parses cleanly and does
+        # nothing, which is the worst possible failure mode.
+        for lineno, line in enumerate(src.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("#") and len(stripped) > 150 and len(SWALLOWED.findall(stripped)) >= 2:
+                problems.append(
+                    f"{path}: cell {i} line {lineno}: comment line appears to have swallowed "
+                    f"code ({len(stripped)} chars); it will silently do nothing"
+                )
+
         for pattern, message in BANNED:
             if pattern.search(src):
                 problems.append(f"{path}: cell {i}: {message}")

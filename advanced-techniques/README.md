@@ -287,7 +287,7 @@ embeddings = load_or_generate(
 # Track every technique run
 exp_id = start_experiment(
     technique='05_reranking',
-    model='bge_base_en_v1.5',
+    model='nomic_embed_text',
     config={'reranker': 'ms_marco', 'top_n': 5}
 )
 
@@ -362,3 +362,31 @@ After completing this layer, you'll have:
 **Difficulty:** ⭐⭐⭐ Advanced  
 **Time commitment:** 4-6 hours total (all techniques)  
 **Recommended approach:** 1-2 techniques per session for understanding
+
+## 11 — Contextual Retrieval
+
+Chunking destroys context: *"It rose by 3% over the previous quarter"* is clear in
+place and nearly unretrievable alone. Notebook 11 asks the local LLM to write one
+sentence situating each chunk in its source document, prepends it, and embeds
+both.
+
+The cost is one LLM call **per chunk** — an indexing cost, not a query cost, and
+cached in a `contextualized_chunks` table so re-runs are free. The notebook is
+honest about when it does not help: chunks that are already self-contained gain
+nothing, and a weak context model can make retrieval *worse* by giving every chunk
+in a document the same generic prefix.
+
+Pairs with `07-hybrid-search` — indexing the contextualized text for BM25 too is
+the other half of the published technique.
+
+## 12 — Modern Reranking
+
+`05-reranking` used `ms-marco-MiniLM-L-6-v2`, a 2021 model. Notebook 12 compares
+it against newer cross-encoders and against **LLM-as-reranker** using the
+`llama3.2:3b` you already have — no extra download.
+
+It measures latency alongside quality, because on CPU that is the whole decision:
+the LLM reranker makes one generation call per candidate, which is fine for batch
+evaluation and usually unacceptable interactively. It also keeps a **no-rerank
+control**, so you can tell whether reranking helped or whether retrieval was
+already fine.

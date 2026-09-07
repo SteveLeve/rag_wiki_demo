@@ -57,6 +57,7 @@ IMPORTS_CELL = f'''{IMPORTS_MARKER}
 # module if you want to read it -- it is meant to be read. Anything a notebook is
 # *teaching* stays written out inline below; see AGENTS.md for the rule.
 from ragkit import config, db, registry
+from ragkit.db import table_name_for
 from ragkit.embed import embed_one, embed_texts
 from ragkit.store import VectorStore
 
@@ -194,7 +195,7 @@ def add_imports(nb: dict, path: Path) -> bool:
 TABLE_NAME_PATTERNS = [
     (re.compile(r"""f['"]embeddings_\{(\w+)\.replace\(["']\.["'],\s*["']_["']\)"""
                 r"""(?:\.replace\(["']-["'],\s*["']_["']\))?\}['"]"""),
-     r"db.table_name_for(\1)"),
+     r"table_name_for(\1)"),
 ]
 
 
@@ -294,15 +295,21 @@ def dynamic_dimension(nb: dict, path: Path) -> bool:
 # Thirteen notebooks hardcoded a connection dict pointing at port 5432. That port
 # is routinely occupied by an unrelated project's PostgreSQL, and these notebooks
 # create and drop tables -- so the default must come from configuration.
+# Capture the leading indentation: these dicts are sometimes nested inside an
+# `if` block, and emitting an unindented replacement produces an IndentationError.
 PG_CONFIG_RE = re.compile(
-    r"POSTGRES_CONFIG\s*=\s*\{[^}]*?'host'[^}]*?\}", re.S
+    r"^([ \t]*)POSTGRES_CONFIG\s*=\s*\{[^}]*?'host'[^}]*?\}", re.S | re.M
 )
-PG_CONFIG_REPLACEMENT = (
-    "# Connection settings come from the environment (see ragkit/config.py), so a\n"
-    "# notebook can never reach into whatever happens to be running on port 5432.\n"
-    "# Override with RAG_PG_HOST / RAG_PG_PORT / RAG_PG_DATABASE.\n"
-    "POSTGRES_CONFIG = config.POSTGRES_CONFIG"
-)
+
+
+def _pg_replacement(match: "re.Match[str]") -> str:
+    pad = match.group(1)
+    return (
+        f"{pad}# Connection settings come from the environment (see ragkit/config.py), so a\n"
+        f"{pad}# notebook can never reach into whatever happens to be running on port 5432.\n"
+        f"{pad}# Override with RAG_PG_HOST / RAG_PG_PORT / RAG_PG_DATABASE.\n"
+        f"{pad}POSTGRES_CONFIG = config.POSTGRES_CONFIG"
+    )
 
 
 def env_driven_postgres(nb: dict, path: Path) -> bool:
@@ -312,7 +319,45 @@ def env_driven_postgres(nb: dict, path: Path) -> bool:
         if cell.get("cell_type") != "code":
             continue
         src = cell_source(cell)
-        new = PG_CONFIG_RE.sub(PG_CONFIG_REPLACEMENT, src)
+        new = PG_CONFIG_RE.sub(_pg_replacement, src)
+        if new != src:
+            set_source(cell, new)
+            changed = True
+    return changed
+
+
+
+# Notebooks call `ollama.embed(...)` directly, which is exactly what a learner
+# should see. Rebinding the name at import time routes those calls through the
+# ragkit seam without touching a single call site -- so RAG_FAKE_MODELS=1 works
+# for the whole curriculum and the code on screen stays honest.
+OLLAMA_SEAM = """# `ollama` below is the real client -- unless RAG_FAKE_MODELS=1 is set, in which
+# case it is ragkit.testing.FakeOllamaClient, which implements the same embed()
+# and chat() API deterministically. That is what lets CI execute every notebook
+# with no model server and no downloads. Every call site stays the same.
+from ragkit.embed import get_client
+
+ollama = get_client()"""
+
+
+def ollama_seam(nb: dict, path: Path) -> bool:
+    """Route bare `import ollama` through ragkit.embed.get_client()."""
+    changed = False
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        src = cell_source(cell)
+        if not re.search(r"^\s*import ollama\s*$", src, re.M):
+            continue
+        # Module-level import: rebind the name once, with the explanation.
+        new = re.sub(r"^import ollama\s*$", OLLAMA_SEAM, src, count=1, flags=re.M)
+        # Function-local imports (07-hybrid-search has these) just need the seam.
+        new = re.sub(
+            r"^([ \t]+)import ollama\s*$",
+            r"\1from ragkit.embed import get_client as _get_client\n"
+            r"\1ollama = _get_client()  # real client, or the deterministic fake",
+            new, flags=re.M,
+        )
         if new != src:
             set_source(cell, new)
             changed = True
@@ -329,6 +374,7 @@ PASSES = {
     "remove_input_prompts": remove_input_prompts,
     "dynamic_dimension": dynamic_dimension,
     "env_driven_postgres": env_driven_postgres,
+    "ollama_seam": ollama_seam,
 }
 
 

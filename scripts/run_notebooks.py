@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute every notebook with papermill, in curriculum order.
+"""Execute every notebook with papermill, in dependency order.
 
 This is the acceptance gate. Run it with RAG_FAKE_MODELS=1 to exercise the whole
 curriculum with no Ollama server and no model downloads.
@@ -19,78 +19,77 @@ ROOT = Path(__file__).resolve().parent.parent
 TIERS = ("foundation", "intermediate", "advanced-techniques", "evaluation-lab")
 
 # Within a tier, prerequisites first. INDEX notebooks are markdown-only.
-ORDER = {
+WITHIN_TIER = {
     "foundation": ["00-setup-postgres-schema", "00-registry-and-tracking-utilities",
                    "00-load-or-generate-pattern", "01-basic-rag-in-memory",
                    "02-rag-postgresql-persistent"],
 }
 
-# The tier order is not simply the directory order. evaluation-lab/01 populates
-# evaluation_groundtruth, and the advanced-techniques notebooks measure themselves
-# against it -- so it has to run before them, despite living in a later folder.
-# Running the tiers naively leaves ground_truth_questions empty and the advanced
-# notebooks fail on an empty list.
-GROUND_TRUTH_FIRST = ("evaluation-lab", "01-create-ground-truth-human-in-loop")
+# The curriculum's dependency order is not its directory order.
+# evaluation-lab/01 populates evaluation_groundtruth, and every advanced-techniques
+# notebook measures itself against it -- so it must run after foundation (which
+# creates the schema and embeddings it needs) but before the advanced tier.
+# Walking the folders naively leaves ground_truth_questions empty, and the advanced
+# notebooks then index into an empty list.
+GROUND_TRUTH = ("evaluation-lab", "01-create-ground-truth-human-in-loop")
 
 
 def ordered(tier: str) -> list[Path]:
     paths = sorted((ROOT / tier).glob("*.ipynb"))
-    if tier not in ORDER:
-        return paths
-    rank = {name: i for i, name in enumerate(ORDER[tier])}
+    rank = {name: i for i, name in enumerate(WITHIN_TIER.get(tier, []))}
     return sorted(paths, key=lambda p: (rank.get(p.stem, 99), p.stem))
+
+
+def plan(tiers: list[str]) -> list[tuple[str, Path]]:
+    """Return (section label, notebook) pairs in the order they must execute."""
+    gt_path = ROOT / GROUND_TRUTH[0] / f"{GROUND_TRUTH[1]}.ipynb"
+    inject = gt_path.exists() and "advanced-techniques" in tiers and GROUND_TRUTH[0] in tiers
+
+    steps: list[tuple[str, Path]] = []
+    for tier in tiers:
+        if tier == "advanced-techniques" and inject:
+            steps.append(("prerequisite: ground truth", gt_path))
+        for path in ordered(tier):
+            if inject and path == gt_path:
+                continue          # already scheduled as the prerequisite
+            steps.append((tier, path))
+    return steps
 
 
 def main() -> int:
     import papermill
 
     tiers = sys.argv[1:] or list(TIERS)
+    unknown = [t for t in tiers if t not in TIERS]
+    if unknown:
+        print(f"unknown tier(s): {unknown}. Choose from {TIERS}", file=sys.stderr)
+        return 2
+
     failures: list[tuple[str, str]] = []
     ran = 0
-
+    section = None
 
     with tempfile.TemporaryDirectory() as tmp:
-        # Seed ground truth before the tiers that consume it.
-        gt_tier, gt_stem = GROUND_TRUTH_FIRST
-        gt_path = ROOT / gt_tier / f"{gt_stem}.ipynb"
-        seeded = set()
-        if gt_path.exists() and gt_tier in tiers and "advanced-techniques" in tiers:
-            print(f"\n=== prerequisite " + "=" * 55)
+        for label, path in plan(tiers):
+            if label != section:
+                section = label
+                print(f"\n=== {label} " + "=" * max(4, 58 - len(label)))
+
+            rel = path.relative_to(ROOT)
             start = time.time()
             try:
                 papermill.execute_notebook(
-                    str(gt_path), str(Path(tmp) / gt_path.name),
+                    str(path), str(Path(tmp) / path.name),
                     kernel_name="python3", cwd=str(ROOT), progress_bar=False,
                 )
             except Exception as exc:
-                detail = next((l for l in reversed(str(exc).strip().splitlines()) if l.strip()), "")[:110]
-                print(f"  FAIL  {gt_path.relative_to(ROOT)}  ({time.time()-start:.0f}s)  {detail}")
-                failures.append((str(gt_path.relative_to(ROOT)), detail))
+                lines = [l for l in str(exc).strip().splitlines() if l.strip()]
+                detail = (lines[-1] if lines else "")[:110]
+                print(f"  FAIL  {rel}  ({time.time()-start:.0f}s)  {detail}")
+                failures.append((str(rel), detail))
             else:
-                print(f"  ok    {gt_path.relative_to(ROOT)}  ({time.time()-start:.0f}s)  [seeds ground truth]")
+                print(f"  ok    {rel}  ({time.time()-start:.0f}s)")
             ran += 1
-            seeded.add(gt_path)
-
-        for tier in tiers:
-            print(f"\n=== {tier} " + "=" * (60 - len(tier)))
-            for path in ordered(tier):
-                if path in seeded:
-                    continue
-                rel = path.relative_to(ROOT)
-                start = time.time()
-                try:
-                    papermill.execute_notebook(
-                        str(path), str(Path(tmp) / path.name),
-                        kernel_name="python3", cwd=str(ROOT), progress_bar=False,
-                    )
-                except Exception as exc:
-                    msg = str(exc).strip().splitlines()
-                    detail = next((l for l in reversed(msg) if l.strip()), "")[:110]
-                    print(f"  FAIL  {rel}  ({time.time()-start:.0f}s)  {detail}")
-                    failures.append((str(rel), detail))
-                else:
-                    print(f"  ok    {rel}  ({time.time()-start:.0f}s)")
-                ran += 1
 
     print(f"\n{ran - len(failures)}/{ran} notebooks executed successfully")
     for name, detail in failures:

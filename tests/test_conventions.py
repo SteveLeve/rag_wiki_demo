@@ -205,3 +205,40 @@ def test_foundation_02_ddl_matches_the_library():
         f"foundation/02 creates {taught} but ragkit.db.ensure_embedding_table creates "
         f"{library}; the two must agree or a table's shape depends on who made it"
     )
+
+
+# Model names this curriculum used to document and no longer ships. Each one
+# either names no Ollama tag at all (`all-minilm-l6-v2` -- the tag is
+# `all-minilm`) or points at a model the catalog dropped.
+RETIRED_MODEL_NAMES = [
+    "all-minilm-l6-v2",
+    "bge-base-en",
+    "bge-large-en",
+    "llama-2",
+    "llama3.2:1b-instruct",
+    "hf.co/",
+]
+
+MARKDOWN = sorted(
+    p for p in ROOT.rglob("*.md")
+    if ".git" not in p.parts and "node_modules" not in p.parts and ".venv" not in p.parts
+)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("retired", RETIRED_MODEL_NAMES)
+def test_docs_do_not_name_retired_models(retired):
+    """Prose and code samples drift out of sync with the catalog silently.
+
+    scripts/nb_lint.py covers the notebooks; nothing covered the ~29 markdown
+    files that quote them, and several still handed readers an alias no model
+    backed -- the same phantom that broke eight notebooks.
+    """
+    offenders = [
+        p.relative_to(ROOT) for p in MARKDOWN
+        if retired in p.read_text(encoding="utf-8")
+    ]
+    assert not offenders, (
+        f"{retired!r} is no longer in the ragkit catalog but still appears in: "
+        + ", ".join(str(o) for o in offenders)
+    )

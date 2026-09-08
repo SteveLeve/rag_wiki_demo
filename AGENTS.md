@@ -65,6 +65,28 @@ Four layers enforce this, because convention alone already failed once:
 alias change that touches only one of those tables produces mid-notebook FK violations. Alias changes,
 registry seeding, and a DB reset ship in the same commit — never separately.
 
+## Ground truth belongs to one embedding model
+
+`evaluation_groundtruth.relevant_chunk_ids` are **row ids in `embeddings_<alias>`** — not global
+document ids. There is no shared `chunks` table; each model owns its own table with its own sequence,
+so id 42 is a different chunk in every one of them.
+
+That is why the table carries `embedding_model_alias`. `evaluation-lab/01` writes the alias it sampled
+its chunks from, and every consumer filters on it:
+
+```sql
+FROM evaluation_groundtruth
+WHERE quality_rating = 'good'
+  AND embedding_model_alias = %s
+```
+
+Drop the filter and a notebook scores one model's retrieval against another model's ids. Nothing
+raises — precision just comes out near zero and reads as a bad retriever. Before this column existed,
+the whole advanced tier evaluated against an empty table and reported it as a result.
+
+If a notebook loads zero questions, the alias is the first thing to check: it must match the alias
+`evaluation-lab/01` ran under (the catalog default, `nomic_embed_text`).
+
 ## Dimensions are never hardcoded
 
 `ragkit.db.ensure_embedding_table()` reads `(table_name, dimension)` from the registry and emits the
@@ -103,6 +125,11 @@ change, `python scripts/reset_db.py --yes` is the expected answer, not a migrati
 
 ## The teaching-copy register
 
+`scripts/nb_lint.py` enforces this table. A notebook that is not the listed owner may not define
+the helper at all — it imports it — and the owner must carry a `# TEACHING COPY` marker naming the
+ragkit function it mirrors. `tests/test_teaching_parity.py` then executes the marked copies and
+compares them to the library on shared fixtures.
+
 Which helper is taught where. A helper is hand-written inline **exactly once**,
 in the notebook whose learning objective names it; everywhere else it is imported.
 
@@ -112,8 +139,9 @@ in the notebook whose learning objective names it; everywhere else it is importe
 | `cosine_similarity` | `foundation/01` | `ragkit.retrieval` |
 | `PostgreSQLVectorDB` | `foundation/02` | `ragkit.store.VectorStore` |
 | `precision_at_k`, `recall_at_k`, `mean_reciprocal_rank`, `ndcg_at_k` | `evaluation-lab/02` | `ragkit.metrics` |
-| `bm25_search_postgresql`, `reciprocal_rank_fusion` | `advanced-techniques/07` | `ragkit.retrieval` |
-| registry / experiment / DDL helpers | nowhere — Tier 3 | `ragkit.registry`, `ragkit.experiment`, `ragkit.db` |
+| `bm25_search_postgresql`, `reciprocal_rank_fusion` | `advanced-techniques/07-hybrid-search` | `ragkit.retrieval` |
+| `start_experiment`, `complete_experiment`, `save_metrics`, `compare_experiments` | `foundation/00-registry-and-tracking-utilities` | `ragkit.experiment` |
+| connections, DDL, registry upserts | nowhere — Tier 3 | `ragkit.db`, `ragkit.registry` |
 
 ## Adjudications
 
@@ -163,6 +191,13 @@ inserting a column mid-table silently shifts every one of those reads.
   one of those names and using it earlier in the same scope is an
   `UnboundLocalError`. Import the function directly instead.
 - **`input()` blocks papermill forever.** `scripts/nb_lint.py` bans it.
+- **A failed statement poisons the whole transaction.** Postgres answers every
+  later query with "current transaction is aborted", so a `try/except` that
+  prints and continues turns one real error into hundreds of useless ones and
+  hides the cause. Any `except` around a query must `conn.rollback()` first.
+- **Bind vector parameters with an explicit cast.** psycopg2 sends a Python list
+  as `numeric[]`, and `embedding <=> %s` then fails with *operator does not
+  exist: vector <=> numeric[]*. Write `%s::vector` every time.
 
 ## Things that are deliberately not here
 

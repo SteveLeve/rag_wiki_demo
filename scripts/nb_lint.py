@@ -32,6 +32,8 @@ BANNED = [
      "HuggingFace GGUF path; use an Ollama-native tag from the ragkit catalog"),
     (re.compile(r"^\s*(?!#).*\binput\s*\(", re.M),
      "interactive input(); it hangs papermill forever"),
+    (re.compile(r"\bcontent\s+as\s+chunk_text\b", re.I),
+     "the embeddings tables have no `content` column; ragkit.db names it chunk_text"),
 ]
 
 
@@ -39,10 +41,33 @@ BANNED = [
 # a marked teaching copy; reading it without either is a NameError on a clean run.
 SHARED_HELPERS = {
     "start_experiment", "complete_experiment", "save_metrics", "compare_experiments",
+    "compute_config_hash",
     "precision_at_k", "recall_at_k", "ndcg_at_k", "mean_reciprocal_rank", "dcg_score",
     "chunk_text", "cosine_similarity", "embed_one", "embed_texts", "table_name_for",
     "reciprocal_rank_fusion",
 }
+
+# Who is allowed to write a helper out by hand. Everyone else imports it.
+#
+# This is the teaching-copy rule from AGENTS.md, enforced. Before it existed the
+# repo carried six textually distinct ndcg_at_k implementations across the
+# notebooks, all sharing one wrong ideal-DCG, and nothing compared them.
+TEACHING_OWNER = {
+    "chunk_text": "foundation/01-basic-rag-in-memory",
+    "cosine_similarity": "foundation/01-basic-rag-in-memory",
+    "start_experiment": "foundation/00-registry-and-tracking-utilities",
+    "complete_experiment": "foundation/00-registry-and-tracking-utilities",
+    "save_metrics": "foundation/00-registry-and-tracking-utilities",
+    "compare_experiments": "foundation/00-registry-and-tracking-utilities",
+    "precision_at_k": "evaluation-lab/02-evaluation-metrics-framework",
+    "recall_at_k": "evaluation-lab/02-evaluation-metrics-framework",
+    "mean_reciprocal_rank": "evaluation-lab/02-evaluation-metrics-framework",
+    "ndcg_at_k": "evaluation-lab/02-evaluation-metrics-framework",
+    "bm25_search_postgresql": "advanced-techniques/07-hybrid-search",
+    "reciprocal_rank_fusion": "advanced-techniques/07-hybrid-search",
+}
+
+TOP_LEVEL_DEF = re.compile(r"^def (\w+)\s*\(", re.M)
 
 # Statement-shaped fragments that should never appear inside a comment.
 SWALLOWED = re.compile(r"(?:print\(|= \[\]|with .*:|for .* in |if .*:|cur\.execute|def )")
@@ -100,6 +125,7 @@ def check(path: Path) -> list[str]:
     problems: list[str] = []
     nb = json.loads(path.read_text(encoding="utf-8"))
     cells = nb.get("cells", [])
+    notebook_id = f"{path.parent.name}/{path.stem}"
 
     if not cells:
         return [f"{path}: notebook has no cells (an empty .ipynb breaks nbformat and papermill)"]
@@ -147,6 +173,21 @@ def check(path: Path) -> list[str]:
                 problems.append(
                     f"{path}: cell {i} line {lineno}: comment line appears to have swallowed "
                     f"code ({len(stripped)} chars); it will silently do nothing"
+                )
+
+        for name in TOP_LEVEL_DEF.findall(src):
+            owner = TEACHING_OWNER.get(name)
+            if owner is None:
+                continue
+            if notebook_id != owner:
+                problems.append(
+                    f"{path}: cell {i}: defines {name}() inline, but {owner} owns that "
+                    f"teaching copy; import it from ragkit instead"
+                )
+            elif "TEACHING COPY" not in src:
+                problems.append(
+                    f"{path}: cell {i}: {name}() is this notebook's teaching copy but carries "
+                    "no '# TEACHING COPY' marker naming the ragkit function it mirrors"
                 )
 
         for pattern, message in BANNED:

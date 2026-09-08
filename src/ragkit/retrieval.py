@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-__all__ = ["cosine_similarity", "retrieve", "reciprocal_rank_fusion"]
+__all__ = ["cosine_similarity", "retrieve", "bm25_search_postgresql", "reciprocal_rank_fusion"]
 
 
 def cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
@@ -64,3 +64,35 @@ def reciprocal_rank_fusion(
         for rank, doc_id in enumerate(ranking):
             scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank + 1)
     return sorted(scores.items(), key=lambda pair: pair[1], reverse=True)
+
+
+def bm25_search_postgresql(
+    query: str, conn, table_name: str, top_k: int = 10
+) -> list[tuple[str, float, int]]:
+    """Keyword retrieval over an embeddings table, using PostgreSQL full-text search.
+
+    `ts_rank` is not literally BM25, but it is the same family: term frequency
+    damped by document length, computed by the database that already holds the
+    text. The point of pairing it with vector search is that it matches exact
+    tokens -- product codes, names, error strings -- which a dense embedding
+    happily smooths away.
+
+    Returns (chunk_text, relevance, chunk_id) tuples, most relevant first.
+    """
+    with conn.cursor() as cur:
+        # plainto_tsquery, not to_tsquery: it takes arbitrary user text without
+        # tripping over operators, so a question mark cannot become a syntax error.
+        cur.execute(
+            f"""
+            SELECT chunk_text,
+                   ts_rank(to_tsvector('english', chunk_text),
+                           plainto_tsquery('english', %s)) AS relevance,
+                   id
+            FROM {table_name}
+            WHERE to_tsvector('english', chunk_text) @@ plainto_tsquery('english', %s)
+            ORDER BY relevance DESC
+            LIMIT %s
+            """,
+            (query, query, top_k),
+        )
+        return [(chunk, float(score), chunk_id) for chunk, score, chunk_id in cur.fetchall()]

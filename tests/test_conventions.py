@@ -159,3 +159,49 @@ def test_every_notebook_alias_is_in_the_catalog():
             assert canonical_alias(raw) in known, (
                 f"{path.name} references {raw!r}, which is not in the ragkit catalog"
             )
+
+
+def _create_table_columns(ddl: str, table_marker: str) -> list[str]:
+    """Column names from the CREATE TABLE whose body follows `table_marker`."""
+    import re
+
+    start = ddl.index(table_marker)
+    body = ddl[ddl.index("(", start) + 1:]
+    depth, end = 1, 0
+    for end, char in enumerate(body):
+        depth += (char == "(") - (char == ")")
+        if depth == 0:
+            break
+    names = []
+    for line in body[:end].splitlines():
+        line = line.strip().rstrip(",")
+        if not line or line.startswith(("--", "CONSTRAINT", "PRIMARY KEY", "FOREIGN KEY")):
+            continue
+        names.append(line.split()[0].lower())
+    return names
+
+
+@pytest.mark.unit
+def test_foundation_02_ddl_matches_the_library():
+    """foundation/02 writes its own CREATE TABLE; it must not drift from ragkit.
+
+    It did. The notebook's teaching copy omitted the `metadata` column that
+    ragkit.db.ensure_embedding_table creates, so whether an embeddings table had
+    that column depended on which code path happened to create it -- and
+    advanced-techniques/08, whose whole subject is chunk metadata, failed with
+    "column metadata does not exist" on a database built by the notebook.
+    """
+    import inspect
+
+    from ragkit import db
+
+    library = _create_table_columns(
+        inspect.getsource(db.ensure_embedding_table), "CREATE TABLE IF NOT EXISTS {table}"
+    )
+    notebook_ddl = notebook_code(ROOT / "foundation" / "02-rag-postgresql-persistent.ipynb")
+    taught = _create_table_columns(notebook_ddl, "CREATE TABLE {self.table_name}")
+
+    assert taught == library, (
+        f"foundation/02 creates {taught} but ragkit.db.ensure_embedding_table creates "
+        f"{library}; the two must agree or a table's shape depends on who made it"
+    )

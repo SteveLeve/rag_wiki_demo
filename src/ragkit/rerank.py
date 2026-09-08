@@ -8,13 +8,34 @@ document *together* rather than embedding them independently.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import lru_cache
 from typing import Any
 
 from . import config, embed
 
-__all__ = ["DEFAULT_CROSS_ENCODER", "cross_encoder_rerank", "llm_rerank"]
+__all__ = ["DEFAULT_CROSS_ENCODER", "load_cross_encoder", "cross_encoder_rerank", "llm_rerank"]
 
 DEFAULT_CROSS_ENCODER = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+
+@lru_cache(maxsize=4)
+def load_cross_encoder(model_name: str = DEFAULT_CROSS_ENCODER):
+    """Load a CrossEncoder once and keep it.
+
+    Constructing one costs seconds. Doing it *inside* the per-query rerank
+    function -- which is what the notebook used to do -- reloads the model from
+    disk for every question, and turns a two-minute evaluation into an eight
+    minute one that looks like reranking is inherently slow. It is not; loading
+    is.
+    """
+    try:
+        from sentence_transformers import CrossEncoder
+    except ImportError as exc:
+        raise ImportError(
+            "cross-encoder reranking needs sentence-transformers. "
+            "Install it with: pip install -e '.[advanced]'"
+        ) from exc
+    return CrossEncoder(model_name)
 
 
 def cross_encoder_rerank(
@@ -30,18 +51,10 @@ def cross_encoder_rerank(
     RERANKER_MODEL constant and then shadowed it with a hardcoded default
     argument, so changing the constant had no effect.
     """
-    try:
-        from sentence_transformers import CrossEncoder
-    except ImportError as exc:
-        raise ImportError(
-            "cross_encoder_rerank needs sentence-transformers. "
-            "Install it with: pip install -e '.[advanced]'"
-        ) from exc
-
     if not candidates:
         return []
 
-    encoder = CrossEncoder(model_name)
+    encoder = load_cross_encoder(model_name)
     pairs = [(query, c[text_key]) for c in candidates]
     scores = encoder.predict(pairs)
 

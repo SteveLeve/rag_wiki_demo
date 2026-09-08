@@ -115,8 +115,18 @@ CREATE TABLE IF NOT EXISTS evaluation_groundtruth (
     quality_rating      TEXT CHECK (quality_rating IN ('good', 'bad', 'ambiguous', 'rejected')),
     human_notes         TEXT,
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by          TEXT
+    created_by          TEXT,
+    -- relevant_chunk_ids are row ids in embeddings_<alias>. Without this column
+    -- they are bare integers, and evaluating one model's retrieval against
+    -- another model's ids scores confidently against the wrong rows.
+    embedding_model_alias TEXT NOT NULL DEFAULT 'nomic_embed_text'
 );
+
+ALTER TABLE evaluation_groundtruth
+    ADD COLUMN IF NOT EXISTS embedding_model_alias TEXT NOT NULL DEFAULT 'nomic_embed_text';
+
+CREATE INDEX IF NOT EXISTS idx_groundtruth_alias
+    ON evaluation_groundtruth(embedding_model_alias);
 
 CREATE TABLE IF NOT EXISTS experiments (
     id                   SERIAL PRIMARY KEY,

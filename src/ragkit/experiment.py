@@ -47,34 +47,41 @@ def compute_config_hash(config: dict[str, Any], length: int = CONFIG_HASH_LENGTH
 
 def start_experiment(
     conn,
-    name: str,
-    embedding_alias: str,
-    config: dict[str, Any],
-    *,
+    experiment_name: str,
+    embedding_model_alias: str,
+    config: dict[str, Any] | None = None,
     notebook_path: str | None = None,
     techniques: Sequence[str] = (),
+    notes: str | None = None,
 ) -> int:
     """Open an experiment row and return its id.
 
-    Verifies the model is registered first, so a failure names the real problem
-    ("run foundation/02") instead of surfacing as a foreign-key violation.
+    Parameter names match what the notebooks already call this with; the library
+    was the outlier, not them.
+
+    The alias is canonicalized and its registration verified before the insert, so
+    a missing model produces "not registered, run foundation/02" rather than a
+    foreign-key violation from deep inside psycopg2. That FK
+    (experiments.embedding_model_alias -> embedding_registry.model_alias) is why
+    the old alias inconsistency broke every advanced-tier run.
     """
     from . import registry
 
-    alias = canonical_alias(embedding_alias)
+    alias = canonical_alias(embedding_model_alias)
     registry.resolve(conn, alias)  # raises with an actionable message if missing
+    config = config or {}
 
     with db.cursor(conn) as cur:
         cur.execute(
             """
             INSERT INTO experiments
                 (experiment_name, notebook_path, embedding_model_alias,
-                 config_hash, config_json, techniques_applied, status)
-            VALUES (%s, %s, %s, %s, %s::jsonb, %s, 'running')
+                 config_hash, config_json, techniques_applied, notes, status)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, 'running')
             RETURNING id
             """,
-            (name, notebook_path, alias, compute_config_hash(config),
-             json.dumps(config, default=str), list(techniques)),
+            (experiment_name, notebook_path, alias, compute_config_hash(config),
+             json.dumps(config, default=str), list(techniques), notes),
         )
         return cur.fetchone()[0]
 
@@ -122,7 +129,18 @@ def save_metrics(
             value, details = data.get("value", 0.0), data.get("details", {})
         else:
             value, details = data, {}
-        rows.append((experiment_id, name, float(value), json.dumps(details or {}), question_id))
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as exc:
+            # evaluation_results.metric_value is a float column. Without this,
+            # putting a config hash or a label in the metrics dict fails as a bare
+            # "could not convert string to float", naming no metric.
+            raise TypeError(
+                f"metric {name!r} must be numeric, got {value!r}. "
+                "Labels and identifiers belong on the experiment row or in the "
+                "metric's details, not in metric_value."
+            ) from exc
+        rows.append((experiment_id, name, numeric, json.dumps(details or {}), question_id))
 
     try:
         with db.cursor(conn) as cur:

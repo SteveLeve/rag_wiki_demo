@@ -97,16 +97,109 @@ def test_cosine_similarity_teaching_copy_matches_library():
         )
 
 
+METRICS_NB = ROOT / "evaluation-lab" / "02-evaluation-metrics-framework.ipynb"
+
+# (retrieved, relevant) pairs chosen to separate the two competing ideal-DCG
+# readings. The third is the case that settled it: one relevant chunk out of ten,
+# ranked first. Normalising against the retrieved set alone scores that a perfect
+# 1.000; normalising against everything relevant scores it 0.339.
+RANKINGS = [
+    ([1, 2, 3, 4, 5], [1, 3, 5]),
+    ([1, 2, 3, 4, 5], [2, 4]),
+    ([7, 1, 2, 3, 4], [7, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+    ([1, 2, 3], [9, 10]),
+    ([], [1, 2]),
+    ([1, 2, 3], []),
+    ([5, 4, 3, 2, 1], [1, 2, 3, 4, 5]),
+]
+
+
 @pytest.mark.unit
-def test_teaching_copies_are_marked():
+@pytest.mark.parametrize("name", ["precision_at_k", "recall_at_k", "ndcg_at_k"])
+@pytest.mark.parametrize("k", [0, 1, 3, 5, 20])
+def test_metric_teaching_copies_match_library(name, k):
+    from ragkit import metrics
+
+    inline = extract_function(METRICS_NB, name)
+    library = getattr(metrics, name)
+    for retrieved, relevant in RANKINGS:
+        assert inline(retrieved, relevant, k) == pytest.approx(
+            library(retrieved, relevant, k), abs=1e-12
+        ), (
+            f"evaluation-lab/02's inline {name} disagrees with ragkit.metrics on "
+            f"retrieved={retrieved}, relevant={relevant}, k={k}"
+        )
+
+
+@pytest.mark.unit
+def test_mrr_teaching_copy_matches_library():
+    from ragkit.metrics import mean_reciprocal_rank as library
+
+    inline = extract_function(METRICS_NB, "mean_reciprocal_rank")
+    for retrieved, relevant in RANKINGS:
+        assert inline(retrieved, relevant) == pytest.approx(library(retrieved, relevant))
+
+
+@pytest.mark.unit
+def test_ndcg_teaching_copy_normalises_over_all_relevant():
+    """The adjudicated semantics, asserted on the case that distinguishes them.
+
+    This is a guard, not a duplicate of the parity test above: if both the
+    notebook and the library regressed together, parity would still pass.
+    """
+    inline = extract_function(METRICS_NB, "ndcg_at_k")
+    one_of_ten_ranked_first = inline([7, 1, 2, 3, 4], list(range(7, 17)), 5)
+    assert one_of_ten_ranked_first == pytest.approx(0.339, abs=5e-4)
+
+
+@pytest.mark.unit
+def test_rrf_teaching_copy_matches_library():
+    from ragkit.retrieval import reciprocal_rank_fusion as library
+
+    inline = extract_function(
+        ROOT / "advanced-techniques" / "07-hybrid-search.ipynb", "reciprocal_rank_fusion"
+    )
+    cases = [
+        ([[1, 2, 3], [3, 2, 1]], 60),
+        ([[1, 2, 3], [4, 5, 6]], 60),
+        ([[1, 2, 3], [3, 2, 1]], 1),
+        ([[], [1]], 60),
+        ([[9]], 60),
+    ]
+    for rankings, k in cases:
+        assert inline(rankings, k) == pytest.approx(library(rankings, k)), (
+            f"advanced-techniques/07's inline reciprocal_rank_fusion disagrees with "
+            f"ragkit.retrieval on {rankings} at k={k}"
+        )
+
+
+# Every notebook that owns a teaching copy, and the names it owns.
+MARKED = {
+    ("foundation", "01-basic-rag-in-memory"): ["chunk_text", "cosine_similarity"],
+    ("evaluation-lab", "02-evaluation-metrics-framework"): [
+        "precision_at_k", "recall_at_k", "mean_reciprocal_rank", "ndcg_at_k"],
+    ("advanced-techniques", "07-hybrid-search"): [
+        "bm25_search_postgresql", "reciprocal_rank_fusion"],
+    ("foundation", "00-registry-and-tracking-utilities"): [
+        "start_experiment", "complete_experiment", "save_metrics", "compare_experiments"],
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("location,names", sorted(MARKED.items()))
+def test_teaching_copies_are_marked(location, names):
     """Every inline duplicate must carry the marker AGENTS.md requires.
 
     The marker is what tells a future reader (or agent) that the duplication is
-    intentional and tested, rather than something to tidy away.
+    intentional and tested, rather than something to tidy away. scripts/nb_lint.py
+    enforces the same rule over the whole tree; this pins the specific set.
     """
-    path = ROOT / "foundation" / "01-basic-rag-in-memory.ipynb"
-    source = notebook_source(path)
-    for name in ("chunk_text", "cosine_similarity"):
-        assert f"# TEACHING COPY" in source, (
-            f"{path.name} defines {name}() inline without a '# TEACHING COPY' marker"
-        )
+    tier, stem = location
+    source = notebook_source(ROOT / tier / f"{stem}.ipynb")
+    for name in names:
+        assert f"def {name}(" in source, f"{tier}/{stem} no longer defines {name}() inline"
+    marked = source.count("# TEACHING COPY")
+    assert marked >= len(names), (
+        f"{tier}/{stem} defines {len(names)} teaching copies but carries only "
+        f"{marked} '# TEACHING COPY' marker(s)"
+    )

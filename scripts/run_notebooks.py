@@ -10,6 +10,7 @@ curriculum with no Ollama server and no model downloads.
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import time
@@ -32,6 +33,23 @@ WITHIN_TIER = {
 # Walking the folders naively leaves ground_truth_questions empty, and the advanced
 # notebooks then index into an empty list.
 GROUND_TRUTH = ("evaluation-lab", "01-create-ground-truth-human-in-loop")
+
+
+# A SyntaxError's traceback ends with a bare caret line, so "last non-empty line"
+# reports `^` and tells you nothing. Prefer the last line that reads as an
+# exception, and fall back to the last line carrying any word characters.
+EXC_LINE = re.compile(r"^\s*(\w+(?:\.\w+)*(?:Error|Exception|Warning|Interrupt|Failure))\b")
+
+
+def summarize(exc: BaseException) -> str:
+    lines = [l.strip() for l in str(exc).strip().splitlines() if l.strip()]
+    for line in reversed(lines):
+        if EXC_LINE.match(line):
+            return line
+    for line in reversed(lines):
+        if any(ch.isalnum() for ch in line):
+            return line
+    return type(exc).__name__
 
 
 def ordered(tier: str) -> list[Path]:
@@ -83,8 +101,7 @@ def main() -> int:
                     kernel_name="python3", cwd=str(ROOT), progress_bar=False,
                 )
             except Exception as exc:
-                lines = [l for l in str(exc).strip().splitlines() if l.strip()]
-                detail = (lines[-1] if lines else "")[:110]
+                detail = summarize(exc)[:110]
                 print(f"  FAIL  {rel}  ({time.time()-start:.0f}s)  {detail}")
                 failures.append((str(rel), detail))
             else:

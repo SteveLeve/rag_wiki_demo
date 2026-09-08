@@ -363,8 +363,8 @@ def test_multi_model_comparison(postgres_connection, mock_dataset, seed_test_dat
     - Different retrieval results per model
     """
     # Step 1: Register two models (already in seed_test_data)
-    model_1_alias = "bge_base_en_v1_5"  # 768 dims
-    model_2_alias = "bge_small_en_v1_5"  # 384 dims
+    model_1_alias = "nomic_embed_text"  # 768 dims
+    model_2_alias = "all_minilm_l6_v2"  # 384 dims
 
     # Verify models are registered
     with postgres_connection.cursor() as cur:
@@ -442,7 +442,7 @@ def test_experiment_tracking_lifecycle(postgres_connection, seed_test_data):
             )
             VALUES (%s, %s, %s, 'running')
             RETURNING id
-        """, (exp_name, 'bge_base_en_v1_5', json.dumps({
+        """, (exp_name, 'nomic_embed_text', json.dumps({
             "top_n": 5,
             "similarity_threshold": 0.7,
             "technique": "basic_rag"
@@ -522,6 +522,7 @@ def test_experiment_tracking_lifecycle(postgres_connection, seed_test_data):
 
 @pytest.mark.e2e
 @pytest.mark.integration
+@pytest.mark.postgres
 def test_error_recovery_transaction_rollback(postgres_connection):
     """
     End-to-end test: simulate errors during pipeline → verify rollback.
@@ -584,7 +585,7 @@ def test_error_recovery_transaction_rollback(postgres_connection):
             # Invalid JSON should fail
             cur.execute("""
                 INSERT INTO experiments (experiment_name, embedding_model_alias, config_json)
-                VALUES ('bad_json', 'bge_base_en_v1_5', '{invalid json}')
+                VALUES ('bad_json', 'nomic_embed_text', '{invalid json}')
             """)
             postgres_connection.commit()
             assert False, "Should have raised error for invalid JSON"
@@ -748,8 +749,11 @@ def test_load_or_generate_embedding_pattern(postgres_connection, sample_embeddin
 
     # Step 5: Query returns same results
     with postgres_connection.cursor() as cur:
+        # Ask PostgreSQL for the dimension rather than measuring the column.
+        # Without a psycopg2 type adapter a vector comes back as its text
+        # representation, so len() would count characters, not dimensions.
         cur.execute("""
-            SELECT chunk_text, embedding FROM cached_embeddings
+            SELECT chunk_text, vector_dims(embedding) FROM cached_embeddings
             ORDER BY created_at
         """)
         cached_results = cur.fetchall()
@@ -757,9 +761,9 @@ def test_load_or_generate_embedding_pattern(postgres_connection, sample_embeddin
     assert len(cached_results) == len(chunks)
 
     # Verify embeddings are still there
-    for (chunk, emb) in cached_results:
+    for (chunk, dims) in cached_results:
         assert chunk in chunks
-        assert len(emb) == 768
+        assert dims == 768
 
 
 # ============================================================================

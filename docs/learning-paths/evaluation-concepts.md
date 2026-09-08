@@ -31,7 +31,7 @@ Evaluation answers critical questions:
 
 - **Is my RAG system working?** Before deploying to users, you need confidence it actually answers questions correctly.
 - **Which technique helps most?** You've read about reranking, query expansion, and hybrid search in ADVANCED_CONCEPTS.md. But which one actually improves your system?
-- **How do I compare embedding models?** OpenAI's text-embedding-3-large vs. all-minilm-l6-v2 — which is better for your data?
+- **How do I compare embedding models?** `mxbai-embed-large` vs. `all-minilm` — which is better for your data?
 - **What causes failures?** When your system gets an answer wrong, why? Was retrieval bad, or generation?
 - **Am I ready for production?** What metrics indicate a system is reliable enough for users?
 
@@ -504,7 +504,7 @@ Embed both expected and generated answers. Compute cosine similarity.
 ```python
 from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer('all-minilm-l6-v2')
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 def semantic_similarity(generated: str, expected: str) -> float:
     gen_embedding = model.encode(generated)
@@ -1074,7 +1074,7 @@ def run_rag_evaluation(test_questions, technique=None):
     results = []
     for question_dict in test_questions:
         question = question_dict['question']
-        rag = RAGSystem(embedding_model='all-minilm-l6-v2')
+        rag = RAGSystem(embedding_model='nomic_embed_text')
 
         if technique == 'reranking':
             rag.enable_reranking(model='cross-encoder/ms-marco-MiniLM-L-12-v2')

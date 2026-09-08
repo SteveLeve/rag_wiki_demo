@@ -93,97 +93,24 @@ def papermill_available():
 
 @pytest.fixture
 def mock_external_apis(monkeypatch):
+    """Make notebooks run without Ollama, by configuring the kernel, not patching it.
+
+    The previous version monkeypatched ``ollama.embeddings`` in the *test* process.
+    Papermill executes each notebook in a separate kernel process, so those patches
+    could never have applied no matter which API they targeted -- the notebooks
+    were always reaching for a real daemon.
+
+    Setting RAG_FAKE_MODELS in the environment does cross that boundary: the kernel
+    inherits it, and ragkit.embed.get_client() serves FakeOllamaClient instead of
+    the ollama module. Deterministic, no server, no model downloads.
     """
-    Mock external API calls to Ollama, datasets, and HuggingFace.
+    monkeypatch.setenv("RAG_FAKE_MODELS", "1")
+    # Point notebooks at the test database rather than whatever occupies 5432.
+    monkeypatch.setenv("RAG_PG_PORT", os.environ.get("RAG_PG_PORT", "5433"))
 
-    Returns mocks that prevent actual API calls while allowing notebooks
-    to execute successfully.
-    """
-    import numpy as np
+    from ragkit.testing import FakeOllamaClient
 
-    # Mock ollama.embeddings
-    def mock_embeddings(model: str, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Return deterministic embedding based on model."""
-        if "768" in model or "base" in model.lower():
-            dim = 768
-        elif "384" in model or "small" in model.lower():
-            dim = 384
-        else:
-            dim = 768
-
-        # Deterministic embedding using model name hash
-        seed = sum(ord(c) for c in model) % (2**31)
-        embedding = np.random.RandomState(seed).randn(dim).tolist()
-
-        return {
-            "embedding": embedding,
-            "model": model,
-            "prompt_eval_count": len(prompt.split()) if isinstance(prompt, str) else 0,
-            "eval_count": 10,
-        }
-
-    # Mock ollama.chat
-    def mock_chat(model: str, messages: list, **kwargs) -> Dict[str, Any]:
-        """Return deterministic chat response."""
-        return {
-            "model": model,
-            "created_at": "2024-01-01T00:00:00Z",
-            "message": {
-                "role": "assistant",
-                "content": "Mock response: This is a simulated LLM response for testing.",
-            },
-            "done": True,
-            "total_duration": 1000000,
-            "load_duration": 100000,
-            "prompt_eval_count": 10,
-            "prompt_eval_duration": 200000,
-            "eval_count": 20,
-            "eval_duration": 400000,
-        }
-
-    # Mock datasets.load_dataset
-    def mock_load_dataset(dataset_name: str, split: Optional[str] = None, **kwargs):
-        """Return minimal test dataset."""
-        # Return a simple mock dataset dict
-        return {
-            "title": [
-                "Test Article 1",
-                "Test Article 2",
-                "Test Article 3",
-                "Test Article 4",
-                "Test Article 5",
-            ],
-            "text": [
-                "This is test article 1 content. " * 20,
-                "This is test article 2 content. " * 20,
-                "This is test article 3 content. " * 20,
-                "This is test article 4 content. " * 20,
-                "This is test article 5 content. " * 20,
-            ],
-            "id": ["1", "2", "3", "4", "5"],
-        }
-
-    # Apply mocks
-    try:
-        import ollama
-
-        monkeypatch.setattr("ollama.embeddings", mock_embeddings)
-        monkeypatch.setattr("ollama.chat", mock_chat)
-    except ImportError:
-        pass
-
-    try:
-        import datasets
-
-        monkeypatch.setattr("datasets.load_dataset", mock_load_dataset)
-    except ImportError:
-        pass
-
-    return {
-        "embeddings": mock_embeddings,
-        "chat": mock_chat,
-        "load_dataset": mock_load_dataset,
-    }
+    return {"client": FakeOllamaClient(), "fake_models": True}
 
 
 @pytest.fixture

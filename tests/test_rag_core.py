@@ -37,106 +37,15 @@ from pathlib import Path
 
 
 # ============================================================================
-# Helper Functions (copied from foundation notebooks)
+# Helpers under test
+#
+# These were previously ~170 lines copied out of the foundation notebooks, so the
+# suite could pass while the notebooks were broken. They now come from the
+# package the notebooks themselves import. See AGENTS.md.
 # ============================================================================
 
-
-def estimate_size_mb(text):
-    """Estimate the size of text in megabytes."""
-    return sys.getsizeof(text) / (1024 * 1024)
-
-
-def chunk_text(text, max_size=1000):
-    """Split text into chunks of approximately max_size characters.
-
-    Tries to break at paragraph boundaries when possible.
-    Falls back to sentence boundaries for oversized paragraphs.
-    """
-    if len(text) <= max_size:
-        return [text]
-
-    chunks = []
-    paragraphs = text.split('\n\n')
-    current_chunk = ''
-
-    for paragraph in paragraphs:
-        # If adding this paragraph would exceed max_size
-        if len(current_chunk) + len(paragraph) > max_size:
-            if current_chunk:  # Save current chunk if not empty
-                chunks.append(current_chunk.strip())
-                current_chunk = ''
-
-            # If single paragraph is too large, split it at sentence boundaries
-            if len(paragraph) > max_size:
-                sentences = paragraph.split('. ')
-                for sentence in sentences:
-                    if len(current_chunk) + len(sentence) > max_size:
-                        if current_chunk:
-                            chunks.append(current_chunk.strip())
-                        current_chunk = sentence + '. '
-                    else:
-                        current_chunk += sentence + '. '
-            else:
-                current_chunk = paragraph
-        else:
-            current_chunk += '\n\n' + paragraph if current_chunk else paragraph
-
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    return chunks
-
-
-def cosine_similarity(a, b):
-    """Calculate cosine similarity between two vectors.
-
-    Args:
-        a: Vector as list or numpy array
-        b: Vector as list or numpy array
-
-    Returns:
-        Float between -1 and 1 (cosine similarity score)
-
-    Raises:
-        ValueError: If vectors have different dimensions
-    """
-    a = np.array(a, dtype=float)
-    b = np.array(b, dtype=float)
-
-    if a.shape != b.shape:
-        raise ValueError(f"Vector dimensions must match: {a.shape} vs {b.shape}")
-
-    dot_product = np.dot(a, b)
-    norm_a = np.linalg.norm(a)
-    norm_b = np.linalg.norm(b)
-
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-
-    return dot_product / (norm_a * norm_b)
-
-
-def retrieve(query_embedding, chunks_embeddings, top_n=5):
-    """Retrieve the top N most relevant chunks based on similarity.
-
-    Args:
-        query_embedding: Query vector (list or numpy array)
-        chunks_embeddings: List of (chunk_text, embedding) tuples
-        top_n: Number of top results to return
-
-    Returns:
-        List of (chunk_text, similarity_score) tuples, sorted by similarity descending
-    """
-    similarities = []
-
-    for chunk, embedding in chunks_embeddings:
-        similarity = cosine_similarity(query_embedding, embedding)
-        similarities.append((chunk, similarity))
-
-    # Sort by similarity descending
-    similarities.sort(key=lambda x: x[1], reverse=True)
-
-    return similarities[:top_n]
+from ragkit.chunking import chunk_text, estimate_size_mb
+from ragkit.retrieval import cosine_similarity, retrieve
 
 
 def load_wikipedia_dataset(target_size_mb=10, local_path=None, mock_dataset=None):
@@ -361,7 +270,9 @@ class TestCosineSimilarity:
         vec1 = np.array([1.0, 2.0])
         vec2 = np.array([1.0, 2.0, 3.0])
 
-        with pytest.raises(ValueError, match="dimensions must match"):
+        # The message names the likely cause (mixed embedding models); assert on
+        # the behaviour rather than the exact wording.
+        with pytest.raises(ValueError, match="dimension"):
             cosine_similarity(vec1, vec2)
 
     @pytest.mark.unit
@@ -883,18 +794,24 @@ class TestPostgreSQLVectorDB:
             ''')
 
             # Insert test embedding
-            embedding_768 = list(np.zeros(768))
+            # pgvector wants a literal like '[0.0,0.0,...]'. Passing a Python list
+            # makes psycopg2 build a Postgres ARRAY[...] instead, and under numpy 2
+            # each element reprs as np.float64(0.0), producing invalid SQL.
+            embedding_768 = str([0.0] * 768)
             cur.execute('''
                 INSERT INTO test_dim (chunk_text, embedding)
                 VALUES (%s, %s)
             ''', ("test", embedding_768))
             postgres_connection.commit()
 
-            # Verify dimension can be checked
-            cur.execute("SELECT embedding FROM test_dim LIMIT 1")
+            # Ask PostgreSQL for the dimension. Selecting the column itself
+            # returns pgvector's text representation ('[0,0,...]') because no
+            # psycopg2 type adapter is registered, so len() would measure
+            # characters, not dimensions.
+            cur.execute("SELECT vector_dims(embedding) FROM test_dim LIMIT 1")
             result = cur.fetchone()
-            if result and result[0]:
-                assert len(result[0]) == 768
+            assert result is not None
+            assert result[0] == 768
 
     @pytest.mark.integration
     @pytest.mark.postgres

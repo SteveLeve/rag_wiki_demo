@@ -122,7 +122,7 @@ Let's see what this looks like in practice:
 import ollama
 
 # Using BGE-base-en-v1.5 embedding model
-embedding_model = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
+embedding_model = 'nomic-embed-text'
 
 # Convert text to embedding
 response = ollama.embed(
@@ -887,7 +887,7 @@ chunks = chunk_text(article['text'], max_size=1000)
 # Convert each chunk to a vector
 for chunk in chunks:
     embedding = ollama.embed(
-        model='hf.co/CompendiumLabs/bge-base-en-v1.5-gguf',
+        model='nomic-embed-text',
         input=chunk
     )['embeddings'][0]
 
@@ -920,7 +920,7 @@ Happens for each user query in real-time.
 query = "What is the capital of France?"
 
 query_embedding = ollama.embed(
-    model='hf.co/CompendiumLabs/bge-base-en-v1.5-gguf',
+    model='nomic-embed-text',
     input=query
 )['embeddings'][0]
 
@@ -996,7 +996,7 @@ user_question = "What is the capital of France?"
 **Step 2: Send to Language Model**
 ```python
 response = ollama.chat(
-    model='hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF',
+    model='llama3.2:3b',
     messages=[
         {'role': 'system', 'content': instruction_prompt},
         {'role': 'user', 'content': user_question},
@@ -1722,11 +1722,11 @@ See: `evaluation-lab/01-create-ground-truth-human-in-loop.ipynb`
 
 ```python
 # Good documentation for reproducibility
-EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
+EMBEDDING_MODEL = 'nomic-embed-text'
 CHUNK_SIZE = 1000  # Tested 500-2000, 1000 balanced precision and context
 K_RETRIEVE = 3     # Top 3 chunks; 1 misses context, 5+ adds noise
 SIMILARITY_THRESHOLD = 0.3  # Below this, chunk is too dissimilar
-LANGUAGE_MODEL = 'hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF'
+LANGUAGE_MODEL = 'llama3.2:3b'
 
 # Document decisions
 """
@@ -1852,7 +1852,7 @@ Skip basics, dive into:
 
 #### Detailed Guides
 - `POSTGRESQL_SETUP.md` - Database setup if using persistent storage (10 min)
-- `LEARNING_ROADMAP.md` - Detailed progression, time estimates, success criteria (10 min)
+- `docs/learning-paths/learning-roadmap.md` - Detailed progression, time estimates, success criteria (10 min)
 - `EVALUATION_GUIDE.md` - Comprehensive evaluation methodology (15 min)
 
 #### For Specific Topics

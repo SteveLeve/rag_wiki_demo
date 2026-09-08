@@ -31,23 +31,19 @@ import pytest
 
 
 # ============================================================================
-# Utility Functions (extracted from foundation/00 notebook)
+# Utilities under test
+#
+# Previously ~390 lines extracted from foundation/00 and kept in sync by hand.
+# compute_config_hash and the experiment lifecycle now come from ragkit; the
+# registry helpers below wrap ragkit.registry in the shape these tests expect.
 # ============================================================================
 
-
-def compute_config_hash(config_dict: Dict) -> str:
-    """Create deterministic SHA256 hash of a configuration dictionary.
-
-    Args:
-        config_dict: Configuration parameters
-
-    Returns:
-        SHA256 hash string (first 12 characters for readability)
-    """
-    config_str = json.dumps(config_dict, sort_keys=True)
-    hash_obj = hashlib.sha256(config_str.encode())
-    return hash_obj.hexdigest()[:12]
-
+from ragkit.experiment import (
+    compare_experiments,
+    complete_experiment,
+    compute_config_hash,
+    save_metrics,
+)
 
 def register_embedding(db_connection, model_alias: str, model_name: str,
                        dimension: int, embedding_count: int,
@@ -76,7 +72,8 @@ def register_embedding(db_connection, model_alias: str, model_name: str,
         with db_connection.cursor() as cur:
             cur.execute('''
                 INSERT INTO embedding_registry (
-                    model_alias, model_name, dimension, embedding_count,
+                    model_alias, model_name,
+                    dimension, embedding_count,
                     chunk_source_dataset, chunk_size_config, metadata_json
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -87,7 +84,8 @@ def register_embedding(db_connection, model_alias: str, model_name: str,
                     metadata_json = EXCLUDED.metadata_json,
                     last_accessed = CURRENT_TIMESTAMP
             ''', (
-                model_alias, model_name, dimension, embedding_count,
+                model_alias, model_name,
+                dimension, embedding_count,
                 chunk_source_dataset, chunk_size_config, json.dumps(metadata)
             ))
         db_connection.commit()
@@ -206,98 +204,6 @@ def start_experiment(db_connection, experiment_name: str,
     return exp_id
 
 
-def complete_experiment(db_connection, experiment_id: int,
-                       status: str = 'completed',
-                       notes: str = None) -> bool:
-    """Mark an experiment as complete.
-
-    Args:
-        db_connection: PostgreSQL connection
-        experiment_id: ID returned from start_experiment()
-        status: 'completed' or 'failed'
-        notes: Optional update to notes field
-
-    Returns:
-        True if successful
-    """
-    try:
-        with db_connection.cursor() as cur:
-            update_notes = ", notes = %s" if notes else ""
-            params = [status, experiment_id] if not notes else [status, notes, experiment_id]
-
-            cur.execute(f'''
-                UPDATE experiments
-                SET status = %s{update_notes}, completed_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-            ''', params)
-        db_connection.commit()
-        return True
-    except Exception as e:
-        db_connection.rollback()
-        raise
-
-
-def save_metrics(db_connection, experiment_id: int, metrics_dict: Dict,
-                 export_to_file: bool = True,
-                 export_dir: str = 'data/experiment_results') -> tuple:
-    """Save experiment metrics to database and optionally to JSON file.
-
-    Args:
-        db_connection: PostgreSQL connection
-        experiment_id: ID from start_experiment()
-        metrics_dict: Dict of {metric_name: value, ...}
-        export_to_file: Whether to also save to filesystem JSON
-        export_dir: Directory for JSON exports
-
-    Returns:
-        Tuple of (success: bool, message: str)
-    """
-    try:
-        with db_connection.cursor() as cur:
-            for metric_name, metric_data in metrics_dict.items():
-                # Handle both simple floats and nested dicts with details
-                if isinstance(metric_data, dict):
-                    metric_value = metric_data.get('value', 0.0)
-                    metric_details = metric_data.get('details', {})
-                else:
-                    metric_value = metric_data
-                    metric_details = {}
-
-                cur.execute('''
-                    INSERT INTO evaluation_results (
-                        experiment_id, metric_name, metric_value, metric_details_json
-                    )
-                    VALUES (%s, %s, %s, %s)
-                ''', (
-                    experiment_id,
-                    metric_name,
-                    float(metric_value),
-                    json.dumps(metric_details) if metric_details else '{}'
-                ))
-        db_connection.commit()
-
-        # Export to file if requested
-        file_path = None
-        if export_to_file:
-            os.makedirs(export_dir, exist_ok=True)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            file_path = os.path.join(export_dir, f'experiment_{experiment_id}_{timestamp}.json')
-            with open(file_path, 'w') as f:
-                json.dump({
-                    'experiment_id': experiment_id,
-                    'timestamp': timestamp,
-                    'metrics': metrics_dict
-                }, f, indent=2)
-
-        msg = f"Saved {len(metrics_dict)} metrics for experiment #{experiment_id}"
-        if file_path:
-            msg += f" to {file_path}"
-        return True, msg
-    except Exception as e:
-        db_connection.rollback()
-        return False, str(e)
-
-
 def get_experiment(db_connection, experiment_id: int) -> Optional[Dict]:
     """Fetch experiment details and associated metrics.
 
@@ -369,55 +275,6 @@ def list_experiments(db_connection, limit: int = 20,
     query += f' ORDER BY started_at DESC LIMIT {limit}'
 
     return pd.read_sql(query, db_connection, params=params)
-
-
-def compare_experiments(db_connection, experiment_ids: list,
-                       metric_names: list = None) -> pd.DataFrame:
-    """Compare metrics across multiple experiments side-by-side.
-
-    Args:
-        db_connection: PostgreSQL connection
-        experiment_ids: List of experiment IDs to compare
-        metric_names: Specific metrics to compare (if None, all metrics)
-
-    Returns:
-        DataFrame with experiments as rows, metrics as columns
-    """
-    if not experiment_ids:
-        return pd.DataFrame()
-
-    placeholders = ','.join(['%s'] * len(experiment_ids))
-
-    query = f'''
-        SELECT
-            e.id,
-            e.experiment_name,
-            e.embedding_model_alias,
-            r.metric_name,
-            r.metric_value
-        FROM experiments e
-        LEFT JOIN evaluation_results r ON e.id = r.experiment_id
-        WHERE e.id IN ({placeholders})
-    '''
-
-    if metric_names:
-        placeholders_metrics = ','.join(['%s'] * len(metric_names))
-        query += f' AND r.metric_name IN ({placeholders_metrics})'
-        params = experiment_ids + metric_names
-    else:
-        params = experiment_ids
-
-    df = pd.read_sql(query, db_connection, params=params)
-
-    if df.empty:
-        return df
-
-    # Pivot to get metrics as columns
-    return df.pivot_table(
-        index=['id', 'experiment_name', 'embedding_model_alias'],
-        columns='metric_name',
-        values='metric_value'
-    ).reset_index()
 
 
 # ============================================================================
@@ -547,7 +404,7 @@ class TestRegisterEmbedding:
         # Verify metadata
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT metadata_json FROM embedding_registry WHERE model_alias = %s', ('meta_model',))
-            stored_meta = json.loads(cur.fetchone()[0])
+            stored_meta = cur.fetchone()[0]
             assert stored_meta == metadata
 
     @pytest.mark.postgres
@@ -563,7 +420,7 @@ class TestRegisterEmbedding:
 
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT metadata_json FROM embedding_registry WHERE model_alias = %s', ('no_meta_model',))
-            meta = json.loads(cur.fetchone()[0])
+            meta = cur.fetchone()[0]
             assert meta == {}
 
     @pytest.mark.postgres
@@ -658,7 +515,7 @@ class TestGetEmbeddingMetadata:
     @pytest.mark.postgres
     def test_known_alias(self, postgres_connection, seed_test_data):
         """Should return metadata for known model."""
-        metadata = get_embedding_metadata(postgres_connection, 'bge_base_en_v1_5')
+        metadata = get_embedding_metadata(postgres_connection, 'nomic_embed_text')
         assert metadata is not None
         assert metadata['dimension'] == 768
         assert metadata['embedding_count'] == 1000
@@ -681,7 +538,7 @@ class TestGetEmbeddingMetadata:
     @pytest.mark.postgres
     def test_all_fields_present(self, postgres_connection, seed_test_data):
         """Result should have all expected fields."""
-        metadata = get_embedding_metadata(postgres_connection, 'bge_small_en_v1_5')
+        metadata = get_embedding_metadata(postgres_connection, 'all_minilm_l6_v2')
         assert 'dimension' in metadata
         assert 'embedding_count' in metadata
         assert 'chunk_source_dataset' in metadata
@@ -790,7 +647,7 @@ class TestExperimentLifecycle:
             postgres_connection,
             'Full Test',
             notebook_path='foundation/02.ipynb',
-            embedding_model_alias='bge_base_en_v1_5',
+            embedding_model_alias='nomic_embed_text',
             config={'lr': 0.001},
             techniques=['reranking', 'query_expansion'],
             notes='This is a test'
@@ -811,7 +668,7 @@ class TestExperimentLifecycle:
 
         with postgres_connection.cursor() as cur:
             cur.execute('SELECT config_json FROM experiments WHERE id = %s', (exp_id,))
-            stored_config = json.loads(cur.fetchone()[0])
+            stored_config = cur.fetchone()[0]
             assert stored_config == config
 
 
@@ -826,7 +683,6 @@ class TestSaveMetrics:
         assert success is True
 
         with postgres_connection.cursor() as cur:
-            cur.fetchall()
             cur.execute('SELECT metric_name, metric_value FROM evaluation_results WHERE experiment_id = %s', (exp_id,))
             rows = cur.fetchall()
             assert len(rows) == 1
@@ -842,7 +698,6 @@ class TestSaveMetrics:
         assert success is True
 
         with postgres_connection.cursor() as cur:
-            cur.fetchall()
             cur.execute('SELECT COUNT(*) FROM evaluation_results WHERE experiment_id = %s', (exp_id,))
             count = cur.fetchone()[0]
             assert count == 4
@@ -880,9 +735,8 @@ class TestSaveMetrics:
         assert success is True
 
         with postgres_connection.cursor() as cur:
-            cur.fetchall()
             cur.execute('SELECT metric_details_json FROM evaluation_results WHERE metric_name = %s', ('accuracy',))
-            details = json.loads(cur.fetchone()[0])
+            details = cur.fetchone()[0]
             assert details['true_positives'] == 95
 
     @pytest.mark.postgres
@@ -944,12 +798,12 @@ class TestListExperiments:
     @pytest.mark.postgres
     def test_filter_by_embedding_model(self, postgres_connection, seed_test_data):
         """Should filter by embedding model alias."""
-        start_experiment(postgres_connection, 'Exp1', embedding_model_alias='bge_base_en_v1_5')
-        start_experiment(postgres_connection, 'Exp2', embedding_model_alias='bge_small_en_v1_5')
+        start_experiment(postgres_connection, 'Exp1', embedding_model_alias='nomic_embed_text')
+        start_experiment(postgres_connection, 'Exp2', embedding_model_alias='all_minilm_l6_v2')
 
-        df = list_experiments(postgres_connection, limit=100, embedding_model='bge_base_en_v1_5')
+        df = list_experiments(postgres_connection, limit=100, embedding_model='nomic_embed_text')
         assert len(df) == 1
-        assert df.iloc[0]['embedding_model_alias'] == 'bge_base_en_v1_5'
+        assert df.iloc[0]['embedding_model_alias'] == 'nomic_embed_text'
 
     @pytest.mark.postgres
     def test_limit_parameter(self, postgres_connection, seed_test_data):
@@ -1028,8 +882,8 @@ class TestCompareExperiments:
     @pytest.mark.postgres
     def test_side_by_side_comparison(self, postgres_connection, seed_test_data):
         """Should compare metrics side-by-side."""
-        exp1 = start_experiment(postgres_connection, 'Exp1', embedding_model_alias='bge_base_en_v1_5')
-        exp2 = start_experiment(postgres_connection, 'Exp2', embedding_model_alias='bge_small_en_v1_5')
+        exp1 = start_experiment(postgres_connection, 'Exp1', embedding_model_alias='nomic_embed_text')
+        exp2 = start_experiment(postgres_connection, 'Exp2', embedding_model_alias='all_minilm_l6_v2')
 
         save_metrics(postgres_connection, exp1, {'accuracy': 0.95, 'f1': 0.92}, export_to_file=False)
         save_metrics(postgres_connection, exp2, {'accuracy': 0.88, 'f1': 0.85}, export_to_file=False)

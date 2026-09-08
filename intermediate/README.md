@@ -31,7 +31,7 @@ These notebooks prepare you for advanced techniques by establishing patterns you
 available = list_available_embeddings()
 
 # Get details about a model
-metadata = get_embedding_metadata('bge_base_en_v1.5')
+metadata = get_embedding_metadata('nomic_embed_text')
 
 # Load or generate (no regeneration if exists!)
 embeddings = load_or_generate(
@@ -66,7 +66,7 @@ embeddings = load_or_generate(
 **Key concepts:**
 ```python
 # Load multiple models
-model1 = load_embedding_model('bge_base_en_v1.5')
+model1 = load_embedding_model('nomic_embed_text')
 model2 = load_embedding_model('all_minilm_l6_v2')
 
 # Compare on same queries
@@ -164,7 +164,7 @@ Once you complete these intermediate notebooks:
 
 - `foundation/README.md` - What foundation notebooks do
 - `foundation/00-registry-and-tracking-utilities.ipynb` - Available utility functions
-- `LEARNING_ROADMAP.md` - Full learning progression
+- `docs/learning-paths/learning-roadmap.md` - Full learning progression
 - `EVALUATION_GUIDE.md` - How to measure RAG quality
 
 ---
@@ -172,3 +172,15 @@ Once you complete these intermediate notebooks:
 **Last updated:** After intermediate notebook creation  
 **Difficulty:** ⭐⭐ Intermediate  
 **Time commitment:** 25-35 minutes total
+
+## 05 — Matryoshka Dimensions
+
+`nomic-embed-text` is trained so the first N components of its output are
+themselves a usable embedding. `ollama.embed(..., dimensions=256)` truncates and
+re-normalizes, so you can trade index size for quality with one parameter and no
+second model.
+
+Notebook 05 measures that trade rather than assuming it: similarity margins at
+128/256/512/768, storage per width, and NDCG against a labelled set. The useful
+width is wherever the quality curve bends relative to the cost curve — which
+depends on your corpus, not on the model card.

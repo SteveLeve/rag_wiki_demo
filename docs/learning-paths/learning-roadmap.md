@@ -236,7 +236,7 @@ Intermediate
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=rag_db \
-  -p 5432:5432 \
+  -p 127.0.0.1:5433:5432 \
   -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 ```
@@ -297,7 +297,7 @@ experiment_id = start_experiment(..., config=config)
 
 For detailed information:
 - Technique-specific guides → See notebook docstrings
-- Evaluation methodology → See [evaluation-guide.md](../development/testing/evaluation-guide.md)
+- Evaluation methodology → See [Evaluation Concepts](./evaluation-concepts.md)
 - Configuration reference → See [quick-reference.md](../user-guides/quick-reference.md)
 
 Happy learning! 🚀

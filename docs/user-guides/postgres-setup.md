@@ -19,7 +19,7 @@ This guide explains how to use PostgreSQL with pgvector to store and reuse embed
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=rag_db \
-  -p 5432:5432 \
+  -p 127.0.0.1:5433:5432 \
   -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 ```
@@ -28,7 +28,7 @@ This command:
 - Runs PostgreSQL with pgvector extension pre-installed
 - Creates a database named `rag_db`
 - Stores data in a persistent Docker volume (`pgvector_data`)
-- Exposes the database on `localhost:5432`
+- Exposes the database on `localhost:5433`
 
 **To stop the container later:**
 ```bash
@@ -63,7 +63,7 @@ We provide two separate foundation notebooks:
 If you choose to use PostgreSQL, just open and run `foundation/02-rag-postgresql-persistent.ipynb`:
 
 1. The notebook will automatically:
-   - Create a PostgreSQL table named `embeddings_bge_base_en_v1_5` (based on your embedding model)
+   - Create a PostgreSQL table named `embeddings_nomic_embed_text` (based on your embedding model)
    - Generate embeddings and store them directly in PostgreSQL
    - Register the embeddings in the `embedding_registry` table
    - Print a success message with the registry ID
@@ -84,8 +84,8 @@ from foundation.load_or_generate_pattern import load_or_generate
 # This will find the registered embeddings instead of regenerating
 embeddings = load_or_generate(
     db=postgres_connection,
-    embedding_model='bge-base-en-v1.5',
-    embedding_alias='bge_base_en_v1.5',
+    embedding_model='nomic-embed-text',
+    embedding_alias='nomic_embed_text',
     preserve_existing=True  # Always use existing
 )
 ```
@@ -100,13 +100,13 @@ You can store embeddings from different models for comparison. The registry make
 
 **First time with default model:**
 ```python
-EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
-EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+EMBEDDING_MODEL = 'nomic-embed-text'
+EMBEDDING_MODEL_ALIAS = 'nomic_embed_text'
 PRESERVE_EXISTING_EMBEDDINGS = False  # Generate new
 ```
 
-Creates table: `embeddings_bge_base_en_v1_5`  
-Registers in: `embedding_registry` with alias `bge_base_en_v1.5`
+Creates table: `embeddings_nomic_embed_text`  
+Registers in: `embedding_registry` with alias `nomic_embed_text`
 
 **Second time with different model:**
 ```python
@@ -125,17 +125,17 @@ Use `intermediate/04-comparing-embedding-models.ipynb` to:
 ```python
 # Discover both models from registry
 available_models = list_available_embeddings(db)
-# Shows both bge_base_en_v1.5 and all_minilm_l6_v2
+# Shows both nomic_embed_text and all_minilm_l6_v2
 
 # Load both from registry (reuses stored embeddings)
-bge_embeddings = load_or_generate(db, model, 'bge_base_en_v1.5', preserve_existing=True)
+nomic_embeddings = load_or_generate(db, model, 'nomic_embed_text', preserve_existing=True)
 minilm_embeddings = load_or_generate(db, model, 'all_minilm_l6_v2', preserve_existing=True)
 
 # Compare retrieval results for the same queries
 for query in test_queries:
-    bge_results = retrieve_with_model(query, bge_embeddings, top_k=5)
+    nomic_results = retrieve_with_model(query, nomic_embeddings, top_k=5)
     minilm_results = retrieve_with_model(query, minilm_embeddings, top_k=5)
-    compare_results(bge_results, minilm_results)
+    compare_results(nomic_results, minilm_results)
 ```
 
 ## Foundation Notebook Comparison
@@ -239,7 +239,7 @@ Or create a new container:
 docker run -d --name pgvector-rag \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=rag_db \
-  -p 5432:5432 \
+  -p 127.0.0.1:5433:5432 \
   -v pgvector_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg16
 ```

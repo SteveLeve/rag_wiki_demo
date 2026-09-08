@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rag_wiki_demo"
-version = "0.1.0"
-description = "A comprehensive RAG (Retrieval-Augmented Generation) learning system with 12 Jupyter notebooks and PostgreSQL backend"
+version = "3.0.0"
+description = "A hands-on RAG (Retrieval-Augmented Generation) curriculum: 24 Jupyter notebooks over a local Ollama + PostgreSQL/pgvector stack"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -22,7 +22,7 @@ keywords = [
 
 # Core dependencies
 dependencies = [
-    "ollama>=0.0.10",
+    "ollama>=0.5",            # ollama.embed() landed in 0.3; batch input and dimensions= need 0.5
     "datasets>=2.14.0",
     "psycopg2-binary>=2.9.0",
     "numpy>=1.24.0",
@@ -42,6 +42,8 @@ test = [
     "faker>=15.0",
     "papermill>=2.4",
     "nbconvert>=7.0",
+    "nbformat>=5.9",
+    "ipykernel>=6.25",
 ]
 
 # Development dependencies
@@ -56,6 +58,7 @@ dev = [
 # Visualization dependencies (for charts/plots in notebooks)
 viz = [
     "matplotlib>=3.10.0",
+    "seaborn>=0.13",     # used by the comparison and dashboard notebooks
 ]
 
 # Advanced RAG techniques dependencies
@@ -74,8 +77,8 @@ Documentation = "https://github.com/example/rag-wiki-demo/blob/main/README.md"
 Repository = "https://github.com/example/rag-wiki-demo.git"
 Issues = "https://github.com/example/rag-wiki-demo/issues"
 
-[tool.setuptools]
-packages = ["tests"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.black]
 line-length = 100
@@ -107,19 +110,3 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--strict-markers -ra"
-markers = [
-    "unit: Unit tests (fast, isolated, no external dependencies)",
-    "integration: Integration tests (require external services)",
-    "slow: Slow tests (may take >5 seconds)",
-    "e2e: End-to-end tests (full workflow testing)",
-    "postgres: Tests requiring PostgreSQL",
-    "notebooks: Tests for Jupyter notebook execution",
-    "ollama: Tests requiring Ollama API",
-]

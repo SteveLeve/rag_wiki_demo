@@ -2,19 +2,41 @@ name: Tests
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+
+env:
+  # Serve deterministic embeddings from ragkit.testing instead of calling Ollama.
+  # This is what lets CI execute the whole notebook curriculum with no model
+  # server and no multi-gigabyte downloads.
+  RAG_FAKE_MODELS: "1"
 
 jobs:
-  test:
-    name: Test Python 3.10, 3.11, 3.12
+  conventions:
+    name: Conventions (no services)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+      - name: Notebook conventions
+        run: python scripts/nb_lint.py
+      - name: Documentation links
+        run: python scripts/check_links.py
+      - name: Unit tests, no PostgreSQL and no Ollama
+        run: pytest -m "not postgres and not notebooks"
 
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -32,75 +54,73 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5433:5432
+
+    env:
+      RAG_PG_PORT: "5433"
+      POSTGRES_PORT: "5433"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel
+      - run: |
+          python -m pip install --upgrade pip
           pip install -e ".[test]"
 
-      - name: Verify database connection
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rag_test_db
+      - name: Verify pgvector is available
         run: |
-          python << 'EOF'
-          try:
-              import psycopg2
-          except ImportError:
-              import psycopg as psycopg2
-          import os
-          db_url = os.getenv('DATABASE_URL')
-          try:
-              conn = psycopg2.connect(db_url)
-              print('✓ Database connection successful')
-              conn.close()
-          except Exception as e:
-              print(f'✗ Database connection failed: {e}')
-              exit(1)
+          python - <<'EOF'
+          import os, psycopg2
+          conn = psycopg2.connect(host="localhost", port=int(os.environ["RAG_PG_PORT"]),
+                                  dbname="rag_test_db", user="postgres", password="postgres")
+          with conn.cursor() as cur:
+              # The extension is named `vector`. `pgvector` is the project name, and
+              # using it silently errored every PostgreSQL test in this suite for
+              # months -- so assert it explicitly here.
+              cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+              cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+              print("pgvector", cur.fetchone()[0])
+          conn.commit()
           EOF
 
-      - name: Run unit tests
-        run: |
-          pytest tests/ \
-            -v \
-            -m "unit" \
-            --tb=short
+      - name: Full test suite
+        run: pytest -m "not notebooks" -ra
 
-      - name: Run integration tests (PostgreSQL required)
+  notebooks:
+    name: Notebook execution
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rag_test_db
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: rag_test_db
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        run: |
-          pytest tests/ \
-            -v \
-            -m "not notebooks" \
-            --tb=short \
-            --durations=10
+          POSTGRES_DB: rag_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
 
-      - name: Generate test summary
-        if: always()
-        run: |
-          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Total Tests: 186" >> $GITHUB_STEP_SUMMARY
-          echo "- Unit Tests: 56 (no external dependencies)" >> $GITHUB_STEP_SUMMARY
-          echo "- Integration Tests: 110 (PostgreSQL required)" >> $GITHUB_STEP_SUMMARY
-          echo "- Notebook Tests: 20 (Papermill execution)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Note: This project uses notebook-centric development." >> $GITHUB_STEP_SUMMARY
-          echo "Implementation code lives in Jupyter notebooks, not separate modules." >> $GITHUB_STEP_SUMMARY
+    env:
+      RAG_PG_PORT: "5433"
 
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install with the advanced extra, CPU-only torch
+        run: |
+          python -m pip install --upgrade pip
+          # sentence-transformers is needed by the reranking notebooks. The CPU
+          # wheel index avoids pulling ~2GB of CUDA that no runner will use.
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[test,advanced]"
+      - name: Execute the full curriculum
+        run: python scripts/run_notebooks.py

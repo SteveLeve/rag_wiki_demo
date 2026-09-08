@@ -217,7 +217,7 @@ def retrieve_with_reranking(query: str,
 reranked_results = retrieve_with_reranking(
     "What is the capital of France?",
     embeddings_db,
-    "all-minilm-l6-v2",
+    "nomic_embed_text",
     top_k_initial=20,
     top_k_final=5
 )
@@ -322,7 +322,7 @@ def expand_query(query: str, llm_model: str, num_expansions: int = 3) -> List[st
 
     Args:
         query: Original user query
-        llm_model: LLM to use for expansion (e.g., 'llama-2')
+        llm_model: LLM to use for expansion (e.g., 'llama3.2:3b')
         num_expansions: How many variations to generate
 
     Returns:
@@ -401,8 +401,8 @@ def retrieve_with_expansion(query: str,
 expanded_results = retrieve_with_expansion(
     "What is photosynthesis?",
     embeddings_db,
-    "all-minilm-l6-v2",
-    "llama-2",
+    "nomic_embed_text",
+    "llama3.2:3b",
     top_n_per_query=20,
     top_k_final=10
 )
@@ -489,11 +489,11 @@ def retrieve_with_hybrid_search(query: str,
     """
 
     # Step 1: Dense retrieval (vector similarity)
-    query_emb = ollama.embed(model='all-minilm-l6-v2', input=query)['embeddings'][0]
+    query_emb = ollama.embed(model='nomic-embed-text', input=query)['embeddings'][0]
 
     with db_connection.cursor() as cur:
         cur.execute(f'''
-            SELECT chunk_text, id, 1 - (embedding <=> %s) as similarity
+            SELECT chunk_text, id, 1 - (embedding <=> %s::vector) as similarity
             FROM {table_name}
             ORDER BY embedding <=> %s
             LIMIT %s
@@ -644,7 +644,7 @@ From `advanced-techniques/08-semantic-chunking-and-metadata.ipynb`:
 
 ```python
 def semantic_chunk(text: str,
-                  embedding_model: str = 'all-minilm-l6-v2',
+                  embedding_model: str = 'nomic_embed_text',
                   similarity_threshold: float = 0.5,
                   buffer_size: int = 3) -> List[str]:
     """Chunk text based on semantic boundaries, not character limits.
@@ -951,8 +951,8 @@ From `advanced-techniques/10-combined-advanced-rag.ipynb`:
 def advanced_rag_pipeline(query: str,
                          embeddings_db: PostgreSQLVectorDB,
                          db_connection,
-                         embedding_model: str = 'all-minilm-l6-v2',
-                         llm_model: str = 'llama-2',
+                         embedding_model: str = 'nomic_embed_text',
+                         llm_model: str = 'llama3.2:3b',
                          use_expansion: bool = True,
                          use_reranking: bool = True,
                          use_citations: bool = True) -> Dict:

@@ -129,8 +129,12 @@ dmypy.json
 # Project-specific
 *.pkl
 *.pickle
-*.json
-data/
+# NOTE: do not ignore *.json wholesale - it swallows notebook fixtures and
+# package data. Ignore only the regenerable corpora and caches.
+wikipedia_*.json
+data/**/*.json
+data/*.json
+experiment_results/
 downloads/
 cache/
 .cache/

@@ -15,8 +15,8 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```
 - [ ] Ensure models are downloaded:
   ```bash
-  ollama pull hf.co/CompendiumLabs/bge-base-en-v1.5-gguf
-  ollama pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+  ollama pull nomic-embed-text
+  ollama pull llama3.2:3b
   ```
 - [ ] Install Python dependencies:
   ```bash
@@ -57,7 +57,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
   docker run -d --name pgvector-rag \
     -e POSTGRES_PASSWORD=postgres \
     -e POSTGRES_DB=rag_db \
-    -p 5432:5432 \
+    -p 127.0.0.1:5433:5432 \
     -v pgvector_data:/var/lib/postgresql/data \
     pgvector/pgvector:pg16
   ```
@@ -84,20 +84,20 @@ Choose your path and follow the checklist. Check off items as you complete them.
   
   POSTGRES_CONFIG = {
       'host': 'localhost',
-      'port': 5432,
+      'port': 5433,
       'database': 'rag_db',
       'user': 'postgres',
       'password': 'postgres',
   }
   
-  EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+  EMBEDDING_MODEL_ALIAS = 'nomic_embed_text'
   ```
 - [ ] Run all cells
 - [ ] Wait for embedding generation (50 min for 10MB)
 - [ ] Verify success message: "✓ Vector database ready with X embeddings in PostgreSQL!"
 
 ### Create Analysis Notebook
-- [ ] Read [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb)
+- [ ] Read [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb)
 - [ ] Create a copy:
   ```bash
   cp embedding-analysis-template.ipynb my-analysis.ipynb
@@ -126,11 +126,11 @@ Choose your path and follow the checklist. Check off items as you complete them.
   ```
 - [ ] Use first model (already done from Path B):
   ```python
-  EMBEDDING_MODEL_ALIAS = 'bge_base_en_v1.5'
+  EMBEDDING_MODEL_ALIAS = 'nomic_embed_text'
   ```
 - [ ] Verify embeddings exist in database:
   ```python
-  db = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_bge_base_en_v1_5')
+  db = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_nomic_embed_text')
   print(f"Stored: {db.get_chunk_count()} embeddings")
   ```
 
@@ -142,12 +142,12 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Open the copy in Jupyter
 - [ ] Change configuration:
   ```python
-  EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-small-en-v1.5-gguf'
-  EMBEDDING_MODEL_ALIAS = 'bge_small_en_v1.5'
+  EMBEDDING_MODEL = 'all-minilm'
+  EMBEDDING_MODEL_ALIAS = 'all_minilm_l6_v2'
   ```
 - [ ] Pull the new model:
   ```bash
-  ollama pull hf.co/CompendiumLabs/bge-small-en-v1.5-gguf
+  ollama pull all-minilm
   ```
 - [ ] Run all cells in the modified notebook
 - [ ] Wait for embedding generation
@@ -160,8 +160,8 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Open in Jupyter
 - [ ] Modify to load both models:
   ```python
-  db1 = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_bge_base_en_v1_5')
-  db2 = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_bge_small_en_v1_5')
+  db1 = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_nomic_embed_text')
+  db2 = PostgreSQLVectorDB(POSTGRES_CONFIG, 'embeddings_all_minilm_l6_v2')
   
   # Compare retrieval results
   test_query = "What is photosynthesis?"
@@ -182,7 +182,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
 - [ ] Press Ctrl+C to cancel
 - [ ] Try a smaller model first:
   ```bash
-  ollama pull hf.co/CompendiumLabs/bge-small-en-v1.5-gguf
+  ollama pull all-minilm
   ```
 - [ ] Check Ollama is actually running with:
   ```bash
@@ -211,7 +211,7 @@ Choose your path and follow the checklist. Check off items as you complete them.
   docker run -d --name pgvector-rag \
     -e POSTGRES_PASSWORD=postgres \
     -e POSTGRES_DB=rag_db \
-    -p 5432:5432 \
+    -p 127.0.0.1:5433:5432 \
     -v pgvector_data:/var/lib/postgresql/data \
     pgvector/pgvector:pg16
   ```
@@ -254,7 +254,7 @@ After completing your chosen path:
    - Experiment: Different `top_n` values in retrieval
 
 3. **Plan Your Experiments** (1 hour)
-   - Use: [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) as template
+   - Use: [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb) as template
    - Try: Custom evaluation metrics
    - Analyze: Retrieval quality by query type
 
@@ -273,8 +273,7 @@ After completing your chosen path:
 | Get started quickly | This checklist (index.md) |
 | Set up PostgreSQL | [postgres-setup.md](./postgres-setup.md) |
 | Choose a storage backend | [quick-reference.md](./quick-reference.md) |
-| See what's new | [enhancement-summary.md](../implementation/enhancement-summary.md) |
-| Copy code examples | [embedding-analysis-template.ipynb](../../embedding-analysis-template.ipynb) |
+| Copy code examples | [evaluation-lab/05-supplemental-embedding-analysis.ipynb](../../evaluation-lab/05-supplemental-embedding-analysis.ipynb) |
 | Learn RAG concepts | [readme.md](../../README.md) → "Experimentation Guide" |
 | Troubleshoot issues | [postgres-setup.md](./postgres-setup.md) → "Troubleshooting" |
 
